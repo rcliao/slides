@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useMemo } from 'react';
 
 interface SlideRendererProps {
   html: string;
@@ -6,11 +6,42 @@ interface SlideRendererProps {
   currentStep: number;
   layout: string;
   bg?: string;
+  particles?: boolean;
   direction: 'next' | 'prev' | 'none';
 }
 
-export function SlideRenderer({ html, steps, currentStep, layout, bg, direction }: SlideRendererProps) {
+const PARTICLE_COLORS = [
+  'rgba(59,130,246,0.3)',   // blue
+  'rgba(0,204,150,0.25)',   // green
+  'rgba(255,161,90,0.2)',   // orange
+  'rgba(255,255,255,0.1)',  // white
+];
+
+function createParticleElements(count: number) {
+  return Array.from({ length: count }, (_, i) => {
+    const size = 2 + Math.random() * 4;
+    return (
+      <div
+        key={i}
+        className="slide-particle"
+        style={{
+          left: `${Math.random() * 100}%`,
+          width: size,
+          height: size,
+          background: PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)],
+          animationDuration: `${8 + Math.random() * 12}s`,
+          animationDelay: `${Math.random() * 10}s`,
+        }}
+      />
+    );
+  });
+}
+
+export function SlideRenderer({ html, steps, currentStep, layout, bg, particles, direction }: SlideRendererProps) {
   const ref = useRef<HTMLDivElement>(null);
+
+  // Memoize particles so they don't regenerate on every render
+  const particleElements = useMemo(() => particles ? createParticleElements(25) : null, [particles]);
 
   // Build visible HTML
   let visibleHtml: string;
@@ -112,13 +143,21 @@ export function SlideRenderer({ html, steps, currentStep, layout, bg, direction 
     }
   }
 
+  const classes = [
+    'slide',
+    `slide-layout-${layout}`,
+    hasBg ? 'slide-has-bg' : '',
+    particles ? 'slide-has-particles' : '',
+  ].filter(Boolean).join(' ');
+
   return (
     <div
-      className={`slide slide-layout-${layout} ${hasBg ? 'slide-has-bg' : ''}`}
+      className={classes}
       ref={ref}
       style={bgStyle}
     >
       {hasBg && <div className="slide-bg-overlay" />}
+      {particleElements && <div className="slide-particles">{particleElements}</div>}
       <div
         className="slide-content"
         dangerouslySetInnerHTML={{ __html: processedHtml }}

@@ -2,6 +2,8 @@
 title: slides
 theme: default
 ---
+particles: true
+---
 
 # slides
 
@@ -15,7 +17,7 @@ slides serve deck.md
 
 ---
 
-## Why slides?
+## Why **slides**?
 
 - Write presentations in **Markdown** -- version control friendly
 - Serve from the **terminal** -- no GUI needed
@@ -26,7 +28,7 @@ slides serve deck.md
 
 ---
 
-## Incremental Reveal
+## Incremental **Reveal**
 
 Add pause comments between content to reveal step by step:
 
@@ -44,7 +46,7 @@ Add pause comments between content to reveal step by step:
 
 ---
 
-## Line Highlighting
+## Line **Highlighting**
 
 Highlight specific lines with `{line-numbers}`:
 
@@ -63,7 +65,7 @@ Lines 2 and 4-6 are highlighted above!
 
 ---
 
-## Mermaid Diagrams
+## **Mermaid** Diagrams
 
 Draw diagrams with mermaid syntax:
 
@@ -103,7 +105,7 @@ layout: center
 
 ---
 
-## Code Highlighting
+## Code **Highlighting**
 
 Full syntax highlighting powered by highlight.js:
 
@@ -119,7 +121,7 @@ interface Slide {
 
 ---
 
-## Keyboard Shortcuts
+## Keyboard **Shortcuts**
 
 | Key | Action |
 |-----|--------|
@@ -152,7 +154,7 @@ Notes are visible when you hover over the "notes" indicator.
 
 ---
 
-## AI Generation
+## AI **Generation**
 
 Generate entire presentations from a topic:
 
@@ -194,7 +196,35 @@ bg: linear-gradient(135deg, #667eea, #764ba2)
 
 ---
 
-## Live Mode
+## **Smart** Highlighting
+
+Bold text in headings automatically gets the **accent color**:
+
+```markdown
+## From **Crashes** to **Confidence**
+```
+
+Draws attention to the key words in your title. Works with all themes.
+
+---
+particles: true
+---
+
+## **Floating** Particles
+
+Add `particles: true` to slide frontmatter for animated background particles:
+
+```markdown
+---
+particles: true
+---
+```
+
+Subtle, colorful dots that float upward behind your content.
+
+---
+
+## **Live** Mode
 
 Present with a live audience:
 

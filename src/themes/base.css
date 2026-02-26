@@ -50,6 +50,34 @@ body,
   flex-direction: column;
 }
 
+/* === Floating Particles === */
+
+.slide-particles {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.slide-particle {
+  position: absolute;
+  border-radius: 50%;
+  animation: particleFloat linear infinite;
+}
+
+@keyframes particleFloat {
+  0% { transform: translateY(100vh) scale(0); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+}
+
+.slide-has-particles .slide-content {
+  position: relative;
+  z-index: 2;
+}
+
 /* === Background Slides === */
 
 .slide-has-bg {
@@ -120,39 +148,39 @@ body,
 }
 
 .slide-layout-cover h1 {
-  font-size: 4rem !important;
+  font-size: clamp(2.5rem, 6vw, 4.5rem) !important;
 }
 
-/* === Typography === */
+/* === Typography (responsive with clamp) === */
 
 .slide-content h1 {
   font-family: var(--slide-heading-font);
-  font-size: 3rem;
+  font-size: clamp(2rem, 4.5vw, 3.5rem);
   font-weight: 700;
   color: var(--slide-heading);
   margin-bottom: 1.5rem;
-  line-height: 1.2;
+  line-height: 1.15;
 }
 
 .slide-content h2 {
   font-family: var(--slide-heading-font);
-  font-size: 2.2rem;
+  font-size: clamp(1.6rem, 3.2vw, 2.4rem);
   font-weight: 600;
   color: var(--slide-heading);
   margin-bottom: 1rem;
-  line-height: 1.3;
+  line-height: 1.25;
 }
 
 .slide-content h3 {
   font-family: var(--slide-heading-font);
-  font-size: 1.6rem;
+  font-size: clamp(1.2rem, 2.2vw, 1.7rem);
   font-weight: 600;
   color: var(--slide-heading);
   margin-bottom: 0.75rem;
 }
 
 .slide-content p {
-  font-size: 1.4rem;
+  font-size: clamp(1.1rem, 1.8vw, 1.4rem);
   line-height: 1.7;
   margin-bottom: 1rem;
 }
@@ -172,11 +200,49 @@ body,
   text-underline-offset: 3px;
 }
 
+/* === Smart Highlighting — bold text in headings gets accent color === */
+
+.slide-content h1 strong,
+.slide-content h2 strong,
+.slide-content h3 strong {
+  color: var(--slide-accent);
+  font-weight: 800;
+}
+
+/* === Staggered Entrance Animations === */
+
+.slide-enter .slide-content > * {
+  opacity: 0;
+  animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.slide-enter .slide-content > *:nth-child(1) { animation-delay: 0.05s; }
+.slide-enter .slide-content > *:nth-child(2) { animation-delay: 0.12s; }
+.slide-enter .slide-content > *:nth-child(3) { animation-delay: 0.19s; }
+.slide-enter .slide-content > *:nth-child(4) { animation-delay: 0.26s; }
+.slide-enter .slide-content > *:nth-child(5) { animation-delay: 0.33s; }
+.slide-enter .slide-content > *:nth-child(6) { animation-delay: 0.40s; }
+.slide-enter .slide-content > *:nth-child(7) { animation-delay: 0.47s; }
+.slide-enter .slide-content > *:nth-child(8) { animation-delay: 0.54s; }
+.slide-enter .slide-content > *:nth-child(9) { animation-delay: 0.61s; }
+.slide-enter .slide-content > *:nth-child(10) { animation-delay: 0.68s; }
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* === Lists === */
 
 .slide-content ul,
 .slide-content ol {
-  font-size: 1.4rem;
+  font-size: clamp(1.1rem, 1.8vw, 1.4rem);
   line-height: 1.9;
   padding-left: 2rem;
   margin-bottom: 1rem;
@@ -222,28 +288,30 @@ body,
 
 .slide-content blockquote {
   border-left: 4px solid var(--slide-accent);
-  padding: 1rem 1.5rem;
-  margin: 1rem 0;
-  font-size: 1.3rem;
+  padding: 1.2rem 1.8rem;
+  margin: 1.2rem 0;
+  font-size: clamp(1.1rem, 1.7vw, 1.35rem);
   font-style: italic;
   color: var(--slide-text);
-  opacity: 0.85;
-  background: var(--slide-code-bg);
-  border-radius: 0 6px 6px 0;
+  opacity: 0.9;
+  background: color-mix(in srgb, var(--slide-accent) 5%, var(--slide-code-bg));
+  border-radius: 0 10px 10px 0;
+  line-height: 1.7;
 }
 
 /* === Tables === */
 
 .slide-content table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   margin-bottom: 1.2rem;
-  font-size: 1.1rem;
+  font-size: clamp(0.9rem, 1.4vw, 1.15rem);
 }
 
 .slide-content th,
 .slide-content td {
-  padding: 0.75rem 1rem;
+  padding: clamp(0.5rem, 1vw, 0.85rem) 1rem;
   text-align: left;
   border-bottom: 1px solid var(--slide-border);
 }
@@ -251,6 +319,14 @@ body,
 .slide-content th {
   font-weight: 600;
   color: var(--slide-heading);
+  font-size: 0.85em;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border-bottom-width: 2px;
+}
+
+.slide-content tr:hover td {
+  background: color-mix(in srgb, var(--slide-accent) 3%, transparent);
 }
 
 /* === Images === */
@@ -274,17 +350,17 @@ body,
 /* === Slide Animation === */
 
 .slide-enter {
-  animation: slideIn 0.25s ease-out;
+  animation: slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes slideIn {
   from {
     opacity: 0;
-    transform: translateX(20px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translateY(0);
   }
 }
 
@@ -580,29 +656,65 @@ body,
   max-height: 50vh;
 }
 
-/* === Step Indicator === */
+/* === Navigation Dots === */
 
-.step-indicator {
+.slide-nav-dots {
   position: fixed;
   bottom: 0.8rem;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 0.3rem;
+  gap: 6px;
+  z-index: 100;
+}
+
+.slide-nav-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--slide-text);
+  opacity: 0.15;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: none;
+  padding: 0;
+}
+
+.slide-nav-dot:hover {
+  opacity: 0.4;
+  transform: scale(1.3);
+}
+
+.slide-nav-dot-active {
+  opacity: 0.8;
+  background: var(--slide-accent);
+  transform: scale(1.3);
+}
+
+/* === Step Indicator (sub-dots below nav) === */
+
+.step-indicator {
+  position: fixed;
+  bottom: 1.6rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
   z-index: 100;
 }
 
 .step-dot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: var(--slide-text);
-  opacity: 0.2;
+  opacity: 0.15;
   transition: opacity 0.2s;
 }
 
 .step-dot-active {
-  opacity: 0.7;
+  opacity: 0.6;
+  background: var(--slide-accent);
 }
 
 /* === Reactions Overlay === */

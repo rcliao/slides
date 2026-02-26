@@ -194,6 +194,7 @@ export function App() {
             currentStep={currentStep}
             layout={layout}
             bg={slide.frontmatter?.bg}
+            particles={slide.frontmatter?.particles === 'true'}
             direction={direction.current}
           />
 
@@ -210,6 +211,20 @@ export function App() {
           <div className="slide-number">
             {currentSlide + 1} / {total}
           </div>
+
+          {/* Clickable navigation dots */}
+          {!isAudience && (
+            <div className="slide-nav-dots">
+              {slidesData.slides.map((_, i) => (
+                <button
+                  key={i}
+                  className={`slide-nav-dot ${i === currentSlide ? 'slide-nav-dot-active' : ''}`}
+                  onClick={() => goTo(i)}
+                  aria-label={`Go to slide ${i + 1}`}
+                />
+              ))}
+            </div>
+          )}
 
           {/* Step indicator dots */}
           {totalSteps > 1 && (
