@@ -71,6 +71,7 @@ export function SlideRenderer({ html, steps, currentStep, layout, bg, particles 
       mermaid.initialize({
         startOnLoad: false,
         theme: theme === 'dark' || theme === 'retro' ? 'dark' : 'default',
+        flowchart: { useMaxWidth: true, htmlLabels: false },
       });
 
       let result = visibleHtml;
@@ -88,7 +89,13 @@ export function SlideRenderer({ html, steps, currentStep, layout, bg, particles 
         const id = `mermaid-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
         try {
           const { svg } = await mermaid.render(id, source);
-          replacements.push([match[0], `<div class="mermaid" data-mermaid-rendered="true">${svg}</div>`]);
+          // Widen foreignObject elements — mermaid's text measurement
+          // underestimates width when page fonts differ from its default
+          const fixed = svg.replace(
+            /<foreignObject([^>]*?)width="([\d.]+)"/g,
+            (_, attrs, w) => `<foreignObject${attrs}width="${parseFloat(w) * 1.25}"`,
+          );
+          replacements.push([match[0], `<div class="mermaid" data-mermaid-rendered="true">${fixed}</div>`]);
         } catch (e) {
           console.error('Mermaid render error:', source.substring(0, 60), e);
         }
