@@ -30,7 +30,6 @@ export function App() {
   const [showHelp, setShowHelp] = useState(false);
   const [showTimer, setShowTimer] = useState(true);
   const [theme, setTheme] = useState(slidesData.meta.theme || 'default');
-  const direction = useRef<'next' | 'prev' | 'none'>('none');
 
   const { totalElapsed, slideElapsed } = useTimer(currentSlide);
 
@@ -43,12 +42,11 @@ export function App() {
   const goTo = useCallback(
     (index: number, step?: number) => {
       const clamped = Math.max(0, Math.min(index, total - 1));
-      direction.current = clamped > currentSlide ? 'next' : clamped < currentSlide ? 'prev' : 'none';
       setCurrentSlide(clamped);
       setCurrentStep(step ?? 0);
       window.location.hash = `${clamped + 1}`;
     },
-    [total, currentSlide],
+    [total],
   );
 
   // Confetti on slides with confetti: true frontmatter
@@ -189,13 +187,13 @@ export function App() {
       ) : (
         <>
           <SlideRenderer
+            key={currentSlide}
             html={slide.content}
             steps={slide.steps}
             currentStep={currentStep}
             layout={layout}
             bg={slide.frontmatter?.bg}
             particles={slide.frontmatter?.particles === 'true'}
-            direction={direction.current}
           />
 
           {!isAudience && (

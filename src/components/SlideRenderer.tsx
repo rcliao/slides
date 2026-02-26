@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 
 interface SlideRendererProps {
   html: string;
@@ -7,7 +7,6 @@ interface SlideRendererProps {
   layout: string;
   bg?: string;
   particles?: boolean;
-  direction: 'next' | 'prev' | 'none';
 }
 
 const PARTICLE_COLORS = [
@@ -37,9 +36,7 @@ function createParticleElements(count: number) {
   });
 }
 
-export function SlideRenderer({ html, steps, currentStep, layout, bg, particles, direction }: SlideRendererProps) {
-  const ref = useRef<HTMLDivElement>(null);
-
+export function SlideRenderer({ html, steps, currentStep, layout, bg, particles }: SlideRendererProps) {
   // Memoize particles so they don't regenerate on every render
   const particleElements = useMemo(() => particles ? createParticleElements(25) : null, [particles]);
 
@@ -53,15 +50,6 @@ export function SlideRenderer({ html, steps, currentStep, layout, bg, particles,
 
   // State for HTML with rendered mermaid diagrams
   const [processedHtml, setProcessedHtml] = useState(visibleHtml);
-
-  // Trigger animation on slide change
-  useEffect(() => {
-    if (ref.current && direction !== 'none') {
-      ref.current.classList.remove('slide-enter');
-      void ref.current.offsetWidth;
-      ref.current.classList.add('slide-enter');
-    }
-  }, [html, direction]);
 
   // Pre-render mermaid diagrams into the HTML string
   useEffect(() => {
@@ -145,6 +133,7 @@ export function SlideRenderer({ html, steps, currentStep, layout, bg, particles,
 
   const classes = [
     'slide',
+    'slide-enter',
     `slide-layout-${layout}`,
     hasBg ? 'slide-has-bg' : '',
     particles ? 'slide-has-particles' : '',
@@ -153,7 +142,6 @@ export function SlideRenderer({ html, steps, currentStep, layout, bg, particles,
   return (
     <div
       className={classes}
-      ref={ref}
       style={bgStyle}
     >
       {hasBg && <div className="slide-bg-overlay" />}
