@@ -1,0 +1,12 @@
+/* === Dark Theme — Sleek Night Mode === */
+
+[data-theme='dark'] {
+  --slide-bg: #0f172a;
+  --slide-text: #cbd5e1;
+  --slide-heading: #f1f5f9;
+  --slide-accent: #38bdf8;
+  --slide-code-bg: #1e293b;
+  --slide-border: #334155;
+  --slide-font: 'Inter', system-ui, -apple-system, sans-serif;
+  --slide-heading-font: 'Inter', system-ui, -apple-system, sans-serif;
+}

@@ -1,0 +1,17 @@
+/* === Default Theme — Clean & Modern === */
+
+[data-theme='default'] {
+  --slide-bg: #ffffff;
+  --slide-text: #334155;
+  --slide-heading: #0f172a;
+  --slide-accent: #3b82f6;
+  --slide-code-bg: #f8fafc;
+  --slide-border: #e2e8f0;
+  --slide-font: 'Inter', system-ui, -apple-system, sans-serif;
+  --slide-heading-font: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Override highlight.js background for light theme */
+[data-theme='default'] .hljs {
+  background: #f8fafc;
+}

@@ -1,0 +1,181 @@
+/* === Retro Theme — 8-Bit CRT Vibes === */
+
+[data-theme='retro'] {
+  --slide-bg: #0a0a1a;
+  --slide-text: #33ff33;
+  --slide-heading: #ffff00;
+  --slide-accent: #ff6600;
+  --slide-code-bg: #0d0d2b;
+  --slide-border: #33ff3344;
+  --slide-font: 'Press Start 2P', monospace;
+  --slide-heading-font: 'Press Start 2P', monospace;
+}
+
+/* Smaller font sizes for pixel font (it renders larger) */
+[data-theme='retro'] .slide-content h1 {
+  font-size: 1.8rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+[data-theme='retro'] .slide-content h2 {
+  font-size: 1.2rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+[data-theme='retro'] .slide-content h3 {
+  font-size: 1rem;
+}
+
+[data-theme='retro'] .slide-content p {
+  font-size: 0.85rem;
+  line-height: 2;
+}
+
+[data-theme='retro'] .slide-content ul,
+[data-theme='retro'] .slide-content ol {
+  font-size: 0.85rem;
+  line-height: 2.2;
+}
+
+[data-theme='retro'] .slide-content pre code {
+  font-size: 0.75rem;
+}
+
+[data-theme='retro'] .slide-content code {
+  font-size: 0.75em;
+}
+
+[data-theme='retro'] .slide-content table {
+  font-size: 0.75rem;
+}
+
+/* Neon glow on headings */
+[data-theme='retro'] .slide-content h1,
+[data-theme='retro'] .slide-content h2 {
+  text-shadow:
+    0 0 10px var(--slide-heading),
+    0 0 30px var(--slide-accent),
+    0 0 60px var(--slide-accent);
+}
+
+/* Scanline overlay */
+[data-theme='retro'] .slide::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.12) 2px,
+    rgba(0, 0, 0, 0.12) 4px
+  );
+  pointer-events: none;
+  z-index: 50;
+}
+
+/* CRT screen curvature (subtle vignette) */
+[data-theme='retro'] .slides-app {
+  box-shadow:
+    inset 0 0 120px rgba(0, 0, 0, 0.5),
+    inset 0 0 60px rgba(0, 0, 0, 0.3);
+}
+
+/* Retro bg overlay uses a lighter tint so the pixel art shows through more */
+[data-theme='retro'] .slide-bg-overlay {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* Neon glow on code blocks */
+[data-theme='retro'] .slide-content pre {
+  border: 1px solid #33ff3344;
+  box-shadow: 0 0 15px rgba(51, 255, 51, 0.1);
+}
+
+/* Neon glow on blockquotes */
+[data-theme='retro'] .slide-content blockquote {
+  border-left-color: #ff6600;
+  background: rgba(255, 102, 0, 0.08);
+  box-shadow: 0 0 15px rgba(255, 102, 0, 0.1);
+}
+
+/* Accent color for links */
+[data-theme='retro'] .slide-content a {
+  color: #00ffff;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+}
+
+/* Table styling */
+[data-theme='retro'] .slide-content th,
+[data-theme='retro'] .slide-content td {
+  border-bottom-color: #33ff3344;
+}
+
+/* Progress bar glow */
+[data-theme='retro'] .progress-bar-fill {
+  box-shadow: 0 0 10px var(--slide-accent);
+}
+
+/* Timer styling */
+[data-theme='retro'] .timer {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.6rem;
+}
+
+/* Slide number */
+[data-theme='retro'] .slide-number {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.55rem;
+}
+
+/* Overview cards */
+[data-theme='retro'] .overview-card {
+  border-color: #33ff3344;
+}
+
+[data-theme='retro'] .overview-card:hover {
+  border-color: #33ff33;
+  box-shadow: 0 0 20px rgba(51, 255, 51, 0.2);
+}
+
+/* Override hljs for retro theme */
+[data-theme='retro'] .hljs {
+  background: #0d0d2b;
+}
+
+/* Blinking cursor effect for list markers */
+[data-theme='retro'] .slide-content li::marker {
+  color: #33ff33;
+}
+
+/* Subtle flicker animation */
+[data-theme='retro'] .slide-content {
+  animation: retroFlicker 4s infinite;
+}
+
+@keyframes retroFlicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  92% {
+    opacity: 1;
+  }
+  93% {
+    opacity: 0.8;
+  }
+  94% {
+    opacity: 1;
+  }
+  96% {
+    opacity: 0.9;
+  }
+  97% {
+    opacity: 1;
+  }
+}
