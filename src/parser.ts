@@ -34,6 +34,29 @@ const marked = new Marked({
       let lang = raw;
       let lineHighlights = new Set<number>();
 
+      // Check for {exec} and {live} annotations before line highlights
+      const execMatch = raw.match(/^(\S*)\s*\{exec\}\s*$/);
+      const liveMatch = raw.match(/^(\S*)\s*\{live\}\s*$/);
+
+      if (execMatch) {
+        lang = execMatch[1] || 'js';
+        const encoded = Buffer.from(text, 'utf-8').toString('base64');
+        // Syntax highlight the code for display
+        let highlighted: string;
+        if (lang && hljs.getLanguage(lang)) {
+          highlighted = hljs.highlight(text, { language: lang }).value;
+        } else {
+          highlighted = hljs.highlightAuto(text).value;
+        }
+        const langClass = lang ? `hljs language-${lang}` : 'hljs';
+        return `<div class="exec-block" data-code="${encoded}"><pre><code class="${langClass}">${highlighted}</code></pre><div class="exec-output"></div></div>`;
+      }
+
+      if (liveMatch) {
+        const encoded = Buffer.from(text, 'utf-8').toString('base64');
+        return `<div class="live-block" data-code="${encoded}"></div>`;
+      }
+
       // Parse line highlight spec: ```python {2,4-6}
       const specMatch = raw.match(/^(\S*)\s*\{(.+?)\}\s*$/);
       if (specMatch) {

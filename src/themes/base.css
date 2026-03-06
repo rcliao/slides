@@ -121,8 +121,21 @@ body,
 /* === Layouts === */
 
 .slide-layout-default {
-  justify-content: flex-start;
-  padding-top: 6rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.slide-layout-default .slide-content {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.slide-layout-default .slide-content ul,
+.slide-layout-default .slide-content ol,
+.slide-layout-default .slide-content pre,
+.slide-layout-default .slide-content .exec-output {
+  text-align: left;
 }
 
 .slide-layout-center {
@@ -145,6 +158,17 @@ body,
   align-items: center;
   justify-content: center;
   text-align: center;
+}
+
+.slide-layout-cover .slide-content ul,
+.slide-layout-cover .slide-content ol,
+.slide-layout-cover .slide-content pre,
+.slide-layout-cover .slide-content .exec-output,
+.slide-layout-center .slide-content ul,
+.slide-layout-center .slide-content ol,
+.slide-layout-center .slide-content pre,
+.slide-layout-center .slide-content .exec-output {
+  text-align: left;
 }
 
 .slide-layout-cover h1 {
@@ -614,17 +638,62 @@ body,
   padding-left: calc(0.5rem - 3px);
 }
 
+/* === Executable Code Blocks === */
+
+.exec-block pre {
+  margin-bottom: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.exec-output {
+  background: color-mix(in srgb, var(--slide-code-bg) 80%, black);
+  border: 1px solid var(--slide-border);
+  border-top: 2px solid var(--slide-accent);
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  padding: 0.8rem 1.2rem;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--slide-text);
+  white-space: pre-wrap;
+  margin-bottom: 1.2rem;
+}
+
+.exec-output:empty {
+  display: none;
+}
+
+.exec-output-error {
+  color: #ef4444;
+}
+
+.exec-output-warn {
+  color: #f59e0b;
+}
+
+.live-block {
+  border: 1px solid var(--slide-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.2rem;
+  background: color-mix(in srgb, var(--slide-code-bg) 50%, transparent);
+}
+
 /* === Mermaid Diagrams === */
 
 .mermaid {
-  display: flex;
-  justify-content: center;
   margin: 1.5rem 0;
-  width: 100%;
+  position: relative;
 }
 
 .mermaid svg {
   max-height: 60vh;
+}
+
+.mermaid foreignObject {
+  overflow: visible;
 }
 
 /* === Navigation Dots === */
