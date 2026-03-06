@@ -218,6 +218,11 @@ Format rules:
 - Include code examples with syntax highlighting where relevant
 - Use <!-- pause --> for incremental reveals on content-heavy slides
 - Use mermaid code blocks for diagrams when it helps explain concepts
+- Use \`\`\`js {exec} for runnable JavaScript blocks (shows code + output like a REPL)
+- {exec} blocks receive an \`output\` DOM element for async/animated updates (e.g. output.textContent = 'hello')
+- {exec} blocks also receive patched setInterval/setTimeout/requestAnimationFrame that auto-cleanup on slide change
+- Use \`\`\`html {live} for inline-rendered HTML/CSS/JS (replaces code with rendered output)
+- {exec} blocks on the same slide share state: variables assigned without const/let/var flow between blocks
 - Add speaker notes with <!-- Note text here -->
 - Keep each slide focused on one idea
 - Aim for 8-12 slides
