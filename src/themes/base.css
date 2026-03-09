@@ -36,13 +36,13 @@ body,
   height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: 4rem 6rem;
+  padding: 3rem 4rem;
   overflow: hidden;
   position: relative;
 }
 
 .slide-content {
-  max-width: 1100px;
+  max-width: 80%;
   width: 100%;
   margin: 0 auto;
   flex: 1;
@@ -172,14 +172,14 @@ body,
 }
 
 .slide-layout-cover h1 {
-  font-size: clamp(2.5rem, 6vw, 4.5rem) !important;
+  font-size: clamp(2.5rem, 6vw, 6rem) !important;
 }
 
 /* === Typography (responsive with clamp) === */
 
 .slide-content h1 {
   font-family: var(--slide-heading-font);
-  font-size: clamp(2rem, 4.5vw, 3.5rem);
+  font-size: clamp(2.4rem, 5vw, 5rem);
   font-weight: 700;
   color: var(--slide-heading);
   margin-bottom: 1.5rem;
@@ -188,7 +188,7 @@ body,
 
 .slide-content h2 {
   font-family: var(--slide-heading-font);
-  font-size: clamp(1.6rem, 3.2vw, 2.4rem);
+  font-size: clamp(1.8rem, 3.5vw, 3.5rem);
   font-weight: 600;
   color: var(--slide-heading);
   margin-bottom: 1rem;
@@ -197,14 +197,14 @@ body,
 
 .slide-content h3 {
   font-family: var(--slide-heading-font);
-  font-size: clamp(1.2rem, 2.2vw, 1.7rem);
+  font-size: clamp(1.4rem, 2.5vw, 2.5rem);
   font-weight: 600;
   color: var(--slide-heading);
   margin-bottom: 0.75rem;
 }
 
 .slide-content p {
-  font-size: clamp(1.1rem, 1.8vw, 1.4rem);
+  font-size: clamp(1.3rem, 2vw, 2.2rem);
   line-height: 1.7;
   margin-bottom: 1rem;
 }
@@ -237,7 +237,7 @@ body,
 
 .slide-content ul,
 .slide-content ol {
-  font-size: clamp(1.1rem, 1.8vw, 1.4rem);
+  font-size: clamp(1.3rem, 2vw, 2.2rem);
   line-height: 1.9;
   padding-left: 2rem;
   margin-bottom: 1rem;
@@ -264,7 +264,7 @@ body,
 
 .slide-content pre code {
   font-family: 'Fira Code', monospace;
-  font-size: 1rem;
+  font-size: clamp(1.1rem, 1.4vw, 1.4rem);
   line-height: 1.6;
   background: none;
   padding: 0;
@@ -285,7 +285,7 @@ body,
   border-left: 4px solid var(--slide-accent);
   padding: 1.2rem 1.8rem;
   margin: 1.2rem 0;
-  font-size: clamp(1.1rem, 1.7vw, 1.35rem);
+  font-size: clamp(1.3rem, 2vw, 2rem);
   font-style: italic;
   color: var(--slide-text);
   opacity: 0.9;
@@ -301,7 +301,7 @@ body,
   border-collapse: separate;
   border-spacing: 0;
   margin-bottom: 1.2rem;
-  font-size: clamp(0.9rem, 1.4vw, 1.15rem);
+  font-size: clamp(1.1rem, 1.6vw, 1.7rem);
 }
 
 .slide-content th,
@@ -328,7 +328,7 @@ body,
 
 .slide-content img {
   max-width: 100%;
-  max-height: 60vh;
+  max-height: 75vh;
   object-fit: contain;
   border-radius: 8px;
 }
@@ -689,7 +689,7 @@ body,
 }
 
 .mermaid svg {
-  max-height: 60vh;
+  max-height: 75vh;
 }
 
 .mermaid foreignObject {
