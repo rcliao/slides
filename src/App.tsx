@@ -55,6 +55,12 @@ export function App() {
     [total, currentSlide],
   );
 
+  // Dynamic browser tab title
+  useEffect(() => {
+    const title = slidesData.meta.title || 'Untitled';
+    document.title = `${title} — ${currentSlide + 1}/${total}`;
+  }, [currentSlide, total]);
+
   // Confetti on slides with confetti: true frontmatter
   useEffect(() => {
     if (slide?.frontmatter?.confetti === 'true') {
