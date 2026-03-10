@@ -127,7 +127,18 @@ async function serve(file: string, options: { live?: boolean; tunnel?: boolean }
     console.log(`  Audience: ${addr}?audience`);
   }
 
-  console.log(`\n  Press ? in the browser for keyboard shortcuts\n`);
+  // Validate slide markdown and print any warnings
+  const { validateSlides } = await import('./parser.js');
+  const warnings = validateSlides(fs.readFileSync(filePath, 'utf-8'));
+  if (warnings.length > 0) {
+    console.log(`  Warnings:`);
+    for (const w of warnings) {
+      console.log(`    Slide ${w.slide}: ${w.message}`);
+    }
+    console.log();
+  }
+
+  console.log(`  Press ? in the browser for keyboard shortcuts\n`);
 
   if (options.tunnel) {
     startTunnel(server);
@@ -376,6 +387,17 @@ Example — canvas animation (most common pattern for visuals):
 
   fs.writeFileSync(outputFile, markdown);
   console.log(`Generated: ${outputFile}`);
+
+  // Validate the generated markdown and print warnings
+  const { validateSlides } = await import('./parser.js');
+  const warnings = validateSlides(markdown);
+  if (warnings.length > 0) {
+    console.log(`\n  Warnings:`);
+    for (const w of warnings) {
+      console.log(`    Slide ${w.slide}: ${w.message}`);
+    }
+  }
+
   console.log(`\nPreview it with:`);
   console.log(`  slides serve ${outputFile}\n`);
 }

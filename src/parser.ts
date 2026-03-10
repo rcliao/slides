@@ -383,3 +383,97 @@ function detectLayout(md: string, index: number, total: number): string {
   // --- Default: dense content ---
   return 'default';
 }
+
+export interface SlideWarning {
+  slide: number;
+  message: string;
+}
+
+/**
+ * Validate slide markdown for common authoring mistakes.
+ * Returns an array of warnings (empty = no issues).
+ */
+export function validateSlides(markdown: string): SlideWarning[] {
+  const warnings: SlideWarning[] = [];
+  const normalized = markdown.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+  // Split into raw slide chunks (same logic as parseSlides)
+  const lines = normalized.split('\n');
+  const chunks: string[] = [];
+  let current: string[] = [];
+  let insideCodeBlock = false;
+
+  for (const line of lines) {
+    if (line.trim().startsWith('```')) insideCodeBlock = !insideCodeBlock;
+    if (!insideCodeBlock && line.trim() === '---') {
+      chunks.push(current.join('\n'));
+      current = [];
+    } else {
+      current.push(line);
+    }
+  }
+  chunks.push(current.join('\n'));
+
+  // Skip global frontmatter
+  let startIdx = 0;
+  if (chunks.length > 2 && chunks[0].trim() === '') startIdx = 2;
+
+  let slideNum = 0;
+  let pendingFrontmatter: Record<string, string> | null = null;
+
+  for (let i = startIdx; i < chunks.length; i++) {
+    const chunk = chunks[i].trim();
+    if (chunk === '') continue;
+
+    if (isYamlLike(chunk)) {
+      pendingFrontmatter = parseSimpleYaml(chunk);
+      continue;
+    }
+
+    slideNum++;
+    const fm = pendingFrontmatter || {};
+    pendingFrontmatter = null;
+
+    // Check: two-column layout without <!-- column --> marker
+    if (fm.layout === 'two-column' && !/<!--\s*column\s*-->/i.test(chunk)) {
+      warnings.push({ slide: slideNum, message: 'layout: two-column but no <!-- column --> marker found' });
+    }
+
+    // Check code blocks within this slide chunk
+    const codeBlockRegex = /```(\S*)\s*\{[^}]*\}\s*\n([\s\S]*?)```/g;
+    let match;
+    while ((match = codeBlockRegex.exec(chunk)) !== null) {
+      const annotation = match[0].split('\n')[0];
+      const code = match[2];
+      const isExec = /\{\s*exec\s*\}/i.test(annotation);
+      const isLive = /\{\s*live\s*\}/i.test(annotation);
+
+      if (isExec) {
+        // Warn about const/let/var at top level that prevents sharing
+        const topLevelDecls = code.match(/^(?:const|let|var)\s+\w+/gm);
+        if (topLevelDecls) {
+          warnings.push({
+            slide: slideNum,
+            message: `{exec} block uses ${topLevelDecls[0].split(/\s+/)[0]} — use bare assignment to share variables between blocks`,
+          });
+        }
+      }
+
+      if (isLive && code.includes('<script>')) {
+        // Warn about scripts without IIFE wrapper
+        const scriptMatch = code.match(/<script>([\s\S]*?)<\/script>/);
+        if (scriptMatch) {
+          const scriptBody = scriptMatch[1].trim();
+          if (!scriptBody.startsWith('(function') && !scriptBody.startsWith('(()') && !scriptBody.startsWith('!function')) {
+            warnings.push({
+              slide: slideNum,
+              message: '{live} <script> missing IIFE wrapper — wrap in (function(){...})() to avoid global pollution',
+            });
+          }
+        }
+      }
+    }
+  }
+
+  return warnings;
+}
