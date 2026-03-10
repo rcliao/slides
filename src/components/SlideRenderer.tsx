@@ -162,6 +162,7 @@ export const SlideRenderer = memo(function SlideRenderer({
       mermaid.initialize({
         startOnLoad: false,
         theme: theme === 'dark' || theme === 'retro' ? 'dark' : 'default',
+        flowchart: { htmlLabels: false },
       });
 
       let result = execLiveHtml;
@@ -177,7 +178,20 @@ export const SlideRenderer = memo(function SlideRenderer({
 
         const id = `mermaid-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
         try {
-          const { svg } = await mermaid.render(id, source);
+          // Create a container in normal flow so mermaid can measure text properly
+          const renderContainer = document.createElement('div');
+          renderContainer.id = id;
+          renderContainer.style.position = 'fixed';
+          renderContainer.style.top = '0';
+          renderContainer.style.left = '0';
+          renderContainer.style.width = '100%';
+          renderContainer.style.opacity = '0';
+          renderContainer.style.pointerEvents = 'none';
+          renderContainer.style.zIndex = '-1';
+          document.body.appendChild(renderContainer);
+
+          const { svg } = await mermaid.render(id, source, renderContainer);
+          renderContainer.remove();
           replacements.push([match[0], `<div class="mermaid" data-mermaid-rendered="true">${svg}</div>`]);
         } catch (e) {
           console.error('Mermaid render error:', source.substring(0, 60), e);
@@ -307,29 +321,6 @@ export const SlideRenderer = memo(function SlideRenderer({
     return () => {
       tracker.cleanup();
     };
-  }, [processedHtml]);
-
-  // Scale mermaid SVGs to fill container
-  useEffect(() => {
-    if (!contentRef.current) return;
-    const containers = contentRef.current.querySelectorAll<HTMLElement>('.mermaid[data-mermaid-rendered]');
-    for (const container of containers) {
-      const svg = container.querySelector('svg');
-      if (!svg) continue;
-      svg.style.transform = '';
-      svg.style.transformOrigin = '';
-      container.style.height = '';
-      const naturalWidth = svg.getBoundingClientRect().width;
-      if (naturalWidth <= 0) continue;
-      const containerWidth = contentRef.current.clientWidth;
-      const scale = containerWidth / naturalWidth;
-      if (scale > 1.05) {
-        svg.style.transformOrigin = 'top left';
-        svg.style.transform = `scale(${scale})`;
-        const naturalHeight = svg.getBoundingClientRect().height / scale;
-        container.style.height = `${naturalHeight * scale}px`;
-      }
-    }
   }, [processedHtml]);
 
   const bgStyle: React.CSSProperties = {};

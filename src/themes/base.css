@@ -711,13 +711,28 @@ body,
 .mermaid {
   margin: 1.5rem 0;
   position: relative;
+  width: 100%;
 }
 
 .mermaid svg {
+  max-width: 100%;
   max-height: 75vh;
+  height: auto;
+  overflow: visible;
 }
 
 .mermaid foreignObject {
+  overflow: visible;
+}
+
+/* Fix mermaid v11 foreignObject 0x0 measurement bug */
+.mermaid foreignObject > div {
+  overflow: visible;
+  display: inline-block;
+}
+
+.mermaid .nodeLabel,
+.mermaid .edgeLabel {
   overflow: visible;
 }
 
