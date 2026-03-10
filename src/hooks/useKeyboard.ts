@@ -11,6 +11,7 @@ interface KeyboardHandlers {
   onThemeCycle: () => void;
   onHelp: () => void;
   onNotes: () => void;
+  onPrint: () => void;
   onEscape: () => void;
 }
 
@@ -77,6 +78,9 @@ export function useKeyboard(handlers: KeyboardHandlers) {
           break;
         case 'n':
           handlers.onNotes();
+          break;
+        case 'p':
+          handlers.onPrint();
           break;
         case '?':
           handlers.onHelp();

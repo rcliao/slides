@@ -940,3 +940,61 @@ body,
   color: var(--slide-text);
   z-index: 100;
 }
+
+/* === Print Styles === */
+
+@media print {
+  /* Remove UI chrome */
+  .timer,
+  .slide-number,
+  .slide-nav-dots,
+  .step-indicator,
+  .slide-notes-indicator,
+  .speaker-notes,
+  .progress-bar,
+  .audience-count,
+  .audience-bar,
+  .help-overlay,
+  .reaction-overlay,
+  .slide-particles {
+    display: none !important;
+  }
+
+  /* Full page slide */
+  html, body, #root {
+    overflow: visible;
+    height: auto;
+  }
+
+  .slides-app {
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+
+  .slide {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+    page-break-after: always;
+    page-break-inside: avoid;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .slide-content {
+    max-width: 90%;
+  }
+
+  /* Ensure backgrounds print */
+  .slide-has-bg {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Readable code blocks */
+  .slide-content pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+}

@@ -130,6 +130,7 @@ export function App() {
         }),
       onHelp: () => setShowHelp((v) => !v),
       onNotes: () => setShowNotes((v) => !v),
+      onPrint: () => window.print(),
       onEscape: () => {
         if (showHelp) setShowHelp(false);
         else if (showNotes) setShowNotes(false);

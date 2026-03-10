@@ -40,6 +40,7 @@ Keyboard shortcuts (in presentation):
   t                       Toggle timer
   n                       Toggle speaker notes
   d                       Cycle themes
+  p                       Print / export PDF
   ?                       Toggle help overlay
   Escape                  Close overlay
 `;

@@ -20,6 +20,7 @@ const SECTIONS = [
       { keys: ['t'], action: 'Toggle timer' },
       { keys: ['n'], action: 'Toggle speaker notes' },
       { keys: ['d'], action: 'Cycle themes' },
+      { keys: ['p'], action: 'Print / export PDF' },
     ],
   },
   {
