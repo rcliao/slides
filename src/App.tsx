@@ -91,7 +91,7 @@ export function App() {
   const handlers = useMemo(
     () => ({
       onNext: () => {
-        if (isAudience) return; // audience can't navigate
+        if (isAudience || showOverview) return;
         if (currentStep < totalSteps - 1) {
           setCurrentStep((s) => s + 1);
         } else {
@@ -99,7 +99,7 @@ export function App() {
         }
       },
       onPrev: () => {
-        if (isAudience) return;
+        if (isAudience || showOverview) return;
         if (currentStep > 0) {
           setCurrentStep((s) => s - 1);
         } else if (currentSlide > 0) {
@@ -109,11 +109,11 @@ export function App() {
         }
       },
       onFirst: () => {
-        if (isAudience) return;
+        if (isAudience || showOverview) return;
         goTo(0);
       },
       onLast: () => {
-        if (isAudience) return;
+        if (isAudience || showOverview) return;
         goTo(total - 1);
       },
       onOverview: () => {
@@ -146,7 +146,7 @@ export function App() {
         else if (document.fullscreenElement) document.exitFullscreen();
       },
       onDigit: (digit: string) => {
-        if (isAudience) return;
+        if (isAudience || showOverview) return;
         const next = pendingSlideNum + digit;
         setPendingSlideNum(next);
         if (slideNumTimeout.current) clearTimeout(slideNumTimeout.current);
