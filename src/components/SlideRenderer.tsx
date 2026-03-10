@@ -313,7 +313,9 @@ export const SlideRenderer = memo(function SlideRenderer({
       for (const attr of oldScript.attributes) {
         newScript.setAttribute(attr.name, attr.value);
       }
-      newScript.textContent = oldScript.textContent;
+      // Wrap in try/catch to surface errors inline instead of failing silently
+      const code = oldScript.textContent || '';
+      newScript.textContent = `try{${code}}catch(__e){var __b=document.currentScript&&document.currentScript.closest('.live-block');if(__b){var __d=document.createElement('div');__d.className='live-block-error';__d.textContent=String(__e);__b.appendChild(__d)}console.error('[live block]',__e)}`;
       oldScript.parentNode?.replaceChild(newScript, oldScript);
     }
 

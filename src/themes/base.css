@@ -774,6 +774,19 @@ body,
   background: color-mix(in srgb, var(--slide-code-bg) 50%, transparent);
 }
 
+.live-block-error {
+  margin-top: 0.75rem;
+  padding: 0.6rem 1rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 6px;
+  color: #ef4444;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
 /* === Mermaid Diagrams === */
 
 .mermaid {
