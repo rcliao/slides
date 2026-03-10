@@ -251,6 +251,7 @@ Key rules:
 - \`setInterval\`/\`setTimeout\`/\`requestAnimationFrame\` auto-cleanup on slide change
 - Multiple {exec} blocks on the SAME slide share state: assign variables WITHOUT const/let/var to share them
 - Use \`const\`/\`let\` for block-local variables, bare assignment for shared state
+- IMPORTANT: Code is displayed verbatim, so keep {exec} blocks SHORT (5-6 lines max). For complex visuals, use {live} blocks instead
 
 Example — static output:
 \`\`\`js {exec}
@@ -290,8 +291,10 @@ Key rules:
 - Use CSS variables for theme-aware styling: var(--slide-accent), var(--slide-text), var(--slide-bg)
 - Timers in <script> tags auto-cleanup on slide change
 - Wrap script code in an IIFE to avoid global pollution
+- Use a fixed-width wrapper (700px) or fixed-size canvas for consistent sizing across layouts
+- Prefix all CSS class names with a short unique prefix (e.g. .mywidget-) to avoid conflicts across slides
 
-Example:
+Example — DOM widget:
 \`\`\`html {live}
 <style>
   .my-widget { padding: 1.5rem; border-radius: 12px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; font-family: system-ui; }
@@ -308,6 +311,27 @@ Example:
     tick();
     setInterval(tick, 1000);
   })();
+</script>
+\`\`\`
+
+Example — canvas animation (most common pattern for visuals):
+\`\`\`html {live}
+<style>
+  .demo-canvas { display:block; margin:0 auto; border-radius:12px; background:#111; }
+</style>
+<canvas class="demo-canvas" width="700" height="350"></canvas>
+<script>
+(function() {
+  var c = document.querySelector('.demo-canvas');
+  if (!c) return;
+  var ctx = c.getContext('2d'), W = c.width, H = c.height;
+  function frame() {
+    ctx.clearRect(0, 0, W, H);
+    // draw here
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
 </script>
 \`\`\`
 
