@@ -26,6 +26,12 @@ export function useLiveSync({
   const [reactions, setReactions] = useState<Reaction[]>([]);
   const reactionId = useRef(0);
 
+  // Stabilize onSlideChange with a ref so the WebSocket connection effect
+  // doesn't reconnect every time the callback identity changes (which happens
+  // on every slide change because the callback closes over currentSlide).
+  const onSlideChangeRef = useRef(onSlideChange);
+  onSlideChangeRef.current = onSlideChange;
+
   // Connect to WebSocket
   useEffect(() => {
     if (!enabled) return;
@@ -46,8 +52,8 @@ export function useLiveSync({
       switch (msg.type) {
         case 'state':
         case 'slide':
-          if (isAudience && onSlideChange) {
-            onSlideChange(msg.slide, msg.step);
+          if (isAudience && onSlideChangeRef.current) {
+            onSlideChangeRef.current(msg.slide, msg.step);
           }
           if (msg.audienceCount !== undefined) {
             setAudienceCount(msg.audienceCount);
@@ -78,7 +84,7 @@ export function useLiveSync({
     return () => {
       ws.close();
     };
-  }, [enabled, isAudience, onSlideChange]);
+  }, [enabled, isAudience]);
 
   // Send slide changes (presenter only)
   useEffect(() => {
