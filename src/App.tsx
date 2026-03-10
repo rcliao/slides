@@ -213,7 +213,7 @@ export function App() {
           {/* Clickable navigation dots */}
           {!isAudience && (
             <div className="slide-nav-dots">
-              {slidesData.slides.map((_, i) => (
+              {slidesData.slides.map((_: unknown, i: number) => (
                 <button
                   key={i}
                   className={`slide-nav-dot ${i === currentSlide ? 'slide-nav-dot-active' : ''}`}
