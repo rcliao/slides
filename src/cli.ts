@@ -305,6 +305,8 @@ Key rules:
 - Wrap script code in an IIFE to avoid global pollution
 - Use a fixed-width wrapper (700px) or fixed-size canvas for consistent sizing across layouts
 - Prefix all CSS class names with a short unique prefix (e.g. .mywidget-) to avoid conflicts across slides
+- IMPORTANT: Scripts may run twice in dev mode (React StrictMode). Make scripts idempotent: clear container innerHTML at the start before building DOM content
+- Add text-align:left to any container that builds text content — slides inherit text-align:center from the layout
 
 Example — DOM widget:
 \`\`\`html {live}
@@ -347,12 +349,35 @@ Example — canvas animation (most common pattern for visuals):
 </script>
 \`\`\`
 
+## Terminal layout
+Use \`layout: terminal\` for slides that should look like a macOS terminal window:
+- Automatically adds traffic light dots, dark background, green monospace text
+- Content is rendered inside the terminal frame — just write normal markdown
+- Headings become cyan, bold becomes green, inline code becomes yellow
+- Great for CLI demos, command output, or deploy logs
+
+Example:
+---
+layout: terminal
+---
+## Deploy Log
+
+$ npm run build
+Build complete in 2.3s
+
+$ rsync -avz dist/ server:/var/www/
+sent 1.2MB, 24 files
+
+**Deploy successful** — 3 replicas healthy
+
 ## Common mistakes to avoid
 - Do NOT use \`document.getElementById\` in {exec} blocks — use the provided \`output\` element instead
 - Do NOT put {exec} code inside {live} blocks or vice versa — they are separate systems
 - Do NOT use const/let for variables you want to share between {exec} blocks — use bare assignment
 - Do NOT forget the IIFE wrapper in {live} <script> tags
-- Do NOT use class names that might conflict across slides — prefix with the slide topic`;
+- Do NOT use class names that might conflict across slides — prefix with the slide topic
+- Do NOT forget to clear container state at the start of {live} scripts (e.g. container.innerHTML = '')
+- Do NOT forget text-align:left on containers that build text (slides center-align by default)`;
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
