@@ -25,6 +25,14 @@ const SECTIONS = [
     ],
   },
   {
+    title: 'Overview Mode',
+    keys: [
+      { keys: ['Arrows', 'hjkl'], action: 'Navigate slides' },
+      { keys: ['Enter'], action: 'Go to selected slide' },
+      { keys: ['Esc'], action: 'Close overview' },
+    ],
+  },
+  {
     title: 'Other',
     keys: [
       { keys: ['?'], action: 'Toggle this help' },

@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Slide } from '../types';
 
 interface SlideOverviewProps {
@@ -7,13 +8,67 @@ interface SlideOverviewProps {
 }
 
 export function SlideOverview({ slides, current, onSelect }: SlideOverviewProps) {
+  const [focused, setFocused] = useState(current);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  // Scroll focused card into view
+  useEffect(() => {
+    cardRefs.current[focused]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [focused]);
+
+  // Compute column count from the grid layout
+  const getColumns = useCallback(() => {
+    const grid = gridRef.current;
+    if (!grid) return 3;
+    return getComputedStyle(grid).gridTemplateColumns.split(' ').length;
+  }, []);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      const total = slides.length;
+      const cols = getColumns();
+
+      switch (e.key) {
+        case 'ArrowRight':
+        case 'l':
+          e.preventDefault();
+          setFocused((f) => Math.min(f + 1, total - 1));
+          break;
+        case 'ArrowLeft':
+        case 'h':
+          e.preventDefault();
+          setFocused((f) => Math.max(f - 1, 0));
+          break;
+        case 'ArrowDown':
+        case 'j':
+          e.preventDefault();
+          setFocused((f) => Math.min(f + cols, total - 1));
+          break;
+        case 'ArrowUp':
+        case 'k':
+          e.preventDefault();
+          setFocused((f) => Math.max(f - cols, 0));
+          break;
+        case 'Enter':
+          e.preventDefault();
+          onSelect(focused);
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [slides.length, focused, onSelect, getColumns]);
+
   return (
     <div className="overview">
-      <div className="overview-grid">
+      <div className="overview-grid" ref={gridRef}>
         {slides.map((slide, i) => (
           <button
             key={i}
-            className={`overview-card ${i === current ? 'overview-card-active' : ''}`}
+            ref={(el) => { cardRefs.current[i] = el; }}
+            className={`overview-card ${i === current ? 'overview-card-active' : ''} ${i === focused ? 'overview-card-focused' : ''}`}
             onClick={() => onSelect(i)}
           >
             <div className="overview-card-number">{i + 1}</div>

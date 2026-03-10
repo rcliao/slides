@@ -593,6 +593,13 @@ body,
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--slide-accent) 30%, transparent);
 }
 
+.overview-card-focused {
+  border-color: var(--slide-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--slide-accent) 50%, transparent),
+    0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
 .overview-card-number {
   position: absolute;
   top: 0.5rem;
