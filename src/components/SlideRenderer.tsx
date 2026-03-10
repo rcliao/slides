@@ -376,6 +376,40 @@ export const SlideRenderer = memo(function SlideRenderer({
     };
   }, [execLiveHtml]);
 
+  // Add copy buttons to code blocks
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+
+    const pres = el.querySelectorAll<HTMLElement>('pre');
+    const buttons: HTMLButtonElement[] = [];
+
+    for (const pre of pres) {
+      // Skip if already has a copy button
+      if (pre.querySelector('.code-copy-btn')) continue;
+
+      const btn = document.createElement('button');
+      btn.className = 'code-copy-btn';
+      btn.textContent = 'Copy';
+      btn.addEventListener('click', () => {
+        const code = pre.querySelector('code');
+        const text = code?.textContent || pre.textContent || '';
+        navigator.clipboard.writeText(text).then(() => {
+          btn.textContent = 'Copied!';
+          setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+        });
+      });
+
+      pre.style.position = 'relative';
+      pre.appendChild(btn);
+      buttons.push(btn);
+    }
+
+    return () => {
+      buttons.forEach((b) => b.remove());
+    };
+  }, [execLiveHtml]);
+
   const bgStyle: React.CSSProperties = {};
   let hasBg = false;
 

@@ -549,6 +549,40 @@ body,
   white-space: pre-wrap;
 }
 
+/* === Code Copy Button === */
+
+.code-copy-btn {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.7rem;
+  font-family: system-ui, sans-serif;
+  background: var(--slide-code-bg, rgba(255, 255, 255, 0.1));
+  color: var(--slide-text, #e0e0e0);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 2;
+}
+
+pre:hover .code-copy-btn {
+  opacity: 0.7;
+}
+
+.code-copy-btn:hover {
+  opacity: 1 !important;
+  background: var(--slide-accent, #3b82f6);
+  color: #fff;
+  border-color: var(--slide-accent, #3b82f6);
+}
+
+@media print {
+  .code-copy-btn { display: none; }
+}
+
 /* === Overview === */
 
 .overview {
