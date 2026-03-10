@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo, memo } from 'react';
+import { useEffect, useRef, useMemo, memo } from 'react';
 
 interface SlideRendererProps {
   html: string;
@@ -174,12 +174,14 @@ export const SlideRenderer = memo(function SlideRenderer({
     return processLiveBlocks(visibleHtml);
   }, [visibleHtml]);
 
-  // Only mermaid needs async state. null = no mermaid override.
-  const [mermaidHtml, setMermaidHtml] = useState<string | null>(null);
-
+  // Render mermaid diagrams via direct DOM mutation (not React state) to avoid
+  // re-rendering the entire slide and destroying {exec}/{live} block state.
   useEffect(() => {
-    setMermaidHtml(null);
-    if (!execLiveHtml.includes('class="mermaid"')) return;
+    const el = contentRef.current;
+    if (!el) return;
+
+    const mermaidDivs = el.querySelectorAll<HTMLElement>('.mermaid:not([data-mermaid-rendered])');
+    if (mermaidDivs.length === 0) return;
 
     let cancelled = false;
 
@@ -193,31 +195,19 @@ export const SlideRenderer = memo(function SlideRenderer({
         theme: theme === 'dark' || theme === 'retro' ? 'dark' : 'default',
       });
 
-      let result = execLiveHtml;
-      const mermaidRegex = /<div class="mermaid">([\s\S]*?)<\/div>/g;
-      const replacements: [string, string][] = [];
-      let match;
+      for (const div of mermaidDivs) {
+        if (cancelled) break;
 
-      while ((match = mermaidRegex.exec(execLiveHtml)) !== null) {
-        const rawSource = match[1];
-        const tmp = document.createElement('div');
-        tmp.innerHTML = rawSource;
-        const source = tmp.textContent || '';
-
+        // Decode HTML entities from the escaped source
+        const source = div.textContent || '';
         const id = `mermaid-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
         try {
           const { svg } = await mermaid.render(id, source);
-          replacements.push([match[0], `<div class="mermaid" data-mermaid-rendered="true">${svg}</div>`]);
+          div.innerHTML = svg;
+          div.setAttribute('data-mermaid-rendered', 'true');
         } catch (e) {
           console.error('Mermaid render error:', source.substring(0, 60), e);
         }
-      }
-
-      if (!cancelled && replacements.length > 0) {
-        for (const [from, to] of replacements) {
-          result = result.replace(from, to);
-        }
-        setMermaidHtml(result);
       }
     })();
 
@@ -225,9 +215,6 @@ export const SlideRenderer = memo(function SlideRenderer({
       cancelled = true;
     };
   }, [execLiveHtml]);
-
-  // Derive final HTML: use mermaid-rendered version if available
-  const processedHtml = mermaidHtml ?? execLiveHtml;
 
   // Execute {exec} blocks after DOM is created
   useEffect(() => {
@@ -338,7 +325,7 @@ export const SlideRenderer = memo(function SlideRenderer({
     return () => {
       tracker.cleanup();
     };
-  }, [processedHtml]);
+  }, [execLiveHtml]);
 
   const bgStyle: React.CSSProperties = {};
   let hasBg = false;
@@ -379,7 +366,7 @@ export const SlideRenderer = memo(function SlideRenderer({
       <div
         ref={contentRef}
         className="slide-content"
-        dangerouslySetInnerHTML={{ __html: processedHtml }}
+        dangerouslySetInnerHTML={{ __html: execLiveHtml }}
       />
     </div>
   );
