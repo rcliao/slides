@@ -175,6 +175,31 @@ body,
   font-size: clamp(2.5rem, 6vw, 6rem) !important;
 }
 
+.slide-layout-two-column {
+  justify-content: center;
+  align-items: center;
+}
+
+.slide-layout-two-column .slide-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: start;
+  text-align: left;
+}
+
+/* Heading spans full width above columns */
+.slide-layout-two-column .slide-content > h1,
+.slide-layout-two-column .slide-content > h2,
+.slide-layout-two-column .slide-content > h3 {
+  grid-column: 1 / -1;
+  text-align: center;
+}
+
+.slide-layout-two-column .slide-col {
+  min-width: 0;
+}
+
 /* === Typography (responsive with clamp) === */
 
 .slide-content h1 {

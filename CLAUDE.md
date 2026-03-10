@@ -56,6 +56,7 @@ npm run build                        # Production build (tsc + vite)
 - First/last slides with light content → `cover`
 - Light content (blockquote only, or heading + ≤2 blocks) → `center`
 - Everything else → `default`
+- `two-column` — set explicitly via frontmatter; uses `<!-- column -->` marker to split content into left/right CSS grid columns; heading above columns spans full width
 
 **SlideRenderer memo:**
 - Wrapped in `React.memo` to prevent re-renders that would destroy interactive DOM state ({exec} outputs, {live} widgets, mermaid SVGs)

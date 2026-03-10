@@ -202,8 +202,17 @@ export function parseSlides(markdown: string): SlidesData {
       const segments = splitByPause(content);
       const totalSteps = segments.length;
 
-      // Convert each segment to HTML independently
-      const steps = segments.map((seg) => marked.parse(seg.trim()) as string);
+      // For two-column layout, split each segment at <!-- column --> before parsing
+      const isTwoCol = frontmatter.layout === 'two-column';
+      const steps = segments.map((seg) => {
+        const trimmed = seg.trim();
+        if (isTwoCol && /^\s*<!--\s*column\s*-->\s*$/m.test(trimmed)) {
+          const cols = trimmed.split(/^\s*<!--\s*column\s*-->\s*$/m);
+          return cols.map((col) => `<div class="slide-col">${marked.parse(col.trim()) as string}</div>`).join('');
+        }
+        return marked.parse(trimmed) as string;
+      });
+
       const fullHtml = steps.join('');
 
       slides.push({
