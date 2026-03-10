@@ -189,11 +189,13 @@ export function parseSlides(markdown: string): SlidesData {
       const frontmatter = pendingFrontmatter || {};
       pendingFrontmatter = null;
 
-      // Extract speaker notes (last HTML comment at end, not spanning across other comments)
+      // Extract speaker notes (last HTML comment at end, not spanning across other comments).
+      // Exclude framework markers (pause, column) which use the same <!-- --> syntax.
+      const FRAMEWORK_MARKERS = new Set(['pause', 'column']);
       let content = chunk;
       let notes: string | undefined;
       const notesMatch = content.match(/\n?<!--((?:(?!<!--)[\s\S])*?)-->\s*$/);
-      if (notesMatch && notesMatch[1].trim() !== 'pause') {
+      if (notesMatch && !FRAMEWORK_MARKERS.has(notesMatch[1].trim().toLowerCase())) {
         notes = notesMatch[1].trim();
         content = content.slice(0, notesMatch.index).trim();
       }
