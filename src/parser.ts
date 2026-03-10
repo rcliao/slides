@@ -125,7 +125,12 @@ function parseSimpleYaml(text: string): Record<string, string> {
   for (const line of text.split('\n')) {
     const match = line.match(/^([\w-]+)\s*:\s*(.+)/);
     if (match) {
-      result[match[1]] = match[2].trim();
+      let value = match[2].trim();
+      // Strip surrounding quotes (common in LLM-generated YAML)
+      if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+        value = value.slice(1, -1);
+      }
+      result[match[1]] = value;
     }
   }
   return result;
@@ -138,7 +143,11 @@ function isYamlLike(text: string): boolean {
 }
 
 export function parseSlides(markdown: string): SlidesData {
-  const lines = markdown.split('\n');
+  // Normalize: strip CRLF, outer markdown fence (common LLM quirk)
+  let normalized = markdown.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  normalized = normalized.replace(/^```(?:markdown|md)?\n([\s\S]*)\n```\s*$/, '$1');
+
+  const lines = normalized.split('\n');
   const chunks: string[] = [];
   let current: string[] = [];
 
