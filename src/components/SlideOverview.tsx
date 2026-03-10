@@ -12,6 +12,14 @@ export function SlideOverview({ slides, current, onSelect }: SlideOverviewProps)
   const gridRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
+  // Stabilize callback and focused value with refs so the keyboard effect
+  // doesn't re-attach every time (onSelect changes on every App re-render
+  // from timer ticks; focused changes on every key press).
+  const onSelectRef = useRef(onSelect);
+  onSelectRef.current = onSelect;
+  const focusedRef = useRef(focused);
+  focusedRef.current = focused;
+
   // Scroll focused card into view
   useEffect(() => {
     cardRefs.current[focused]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
@@ -52,14 +60,14 @@ export function SlideOverview({ slides, current, onSelect }: SlideOverviewProps)
           break;
         case 'Enter':
           e.preventDefault();
-          onSelect(focused);
+          onSelectRef.current(focusedRef.current);
           break;
       }
     };
 
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [slides.length, focused, onSelect, getColumns]);
+  }, [slides.length, getColumns]);
 
   return (
     <div className="overview">
