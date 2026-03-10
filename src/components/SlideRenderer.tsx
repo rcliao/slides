@@ -231,7 +231,7 @@ export const SlideRenderer = memo(function SlideRenderer({
             textEl.setAttribute('y', String(y + h / 2));
             textEl.setAttribute('text-anchor', 'middle');
             textEl.setAttribute('dominant-baseline', 'central');
-            textEl.setAttribute('fill', isEdge ? '#ccc' : '#e0e0e0');
+            textEl.setAttribute('fill', 'currentColor');
             textEl.setAttribute('font-size', isEdge ? '12' : '14');
             textEl.setAttribute('font-family', 'system-ui, sans-serif');
             textEl.textContent = text;

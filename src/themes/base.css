@@ -810,6 +810,7 @@ body,
   width: 100%;
   display: flex;
   justify-content: center;
+  color: var(--slide-text, #e0e0e0);
 }
 
 /* === Navigation Dots === */
