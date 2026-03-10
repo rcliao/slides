@@ -7,6 +7,7 @@ interface SlideRendererProps {
   layout: string;
   bg?: string;
   particles?: boolean;
+  direction?: 'forward' | 'backward';
 }
 
 /** Decode base64 that was encoded from UTF-8 (Node Buffer.toString('base64')). */
@@ -148,6 +149,7 @@ export const SlideRenderer = memo(function SlideRenderer({
   layout,
   bg,
   particles,
+  direction = 'forward',
 }: SlideRendererProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const execScopeRef = useRef<Record<string, unknown>>({});
@@ -353,7 +355,7 @@ export const SlideRenderer = memo(function SlideRenderer({
 
   const classes = [
     'slide',
-    'slide-enter',
+    direction === 'backward' ? 'slide-enter-backward' : 'slide-enter-forward',
     `slide-layout-${layout}`,
     hasBg ? 'slide-has-bg' : '',
     particles ? 'slide-has-particles' : '',

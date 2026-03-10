@@ -369,18 +369,33 @@ body,
 
 /* === Slide Animation === */
 
-.slide-enter {
-  animation: slideIn 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+.slide-enter-forward {
+  animation: slideInForward 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes slideIn {
+.slide-enter-backward {
+  animation: slideInBackward 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideInForward {
   from {
     opacity: 0;
-    transform: translateY(16px);
+    transform: translateX(40px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInBackward {
+  from {
+    opacity: 0;
+    transform: translateX(-40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 

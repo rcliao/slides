@@ -27,6 +27,7 @@ export function App() {
     return n >= 1 && n <= slidesData.slides.length ? n - 1 : 0;
   });
   const [currentStep, setCurrentStep] = useState(0);
+  const [slideDirection, setSlideDirection] = useState<'forward' | 'backward'>('forward');
   const [showOverview, setShowOverview] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
@@ -44,11 +45,12 @@ export function App() {
   const goTo = useCallback(
     (index: number, step?: number) => {
       const clamped = Math.max(0, Math.min(index, total - 1));
+      setSlideDirection(clamped >= currentSlide ? 'forward' : 'backward');
       setCurrentSlide(clamped);
       setCurrentStep(step ?? 0);
       window.location.hash = `${clamped + 1}`;
     },
-    [total],
+    [total, currentSlide],
   );
 
   // Confetti on slides with confetti: true frontmatter
@@ -68,11 +70,12 @@ export function App() {
   const onLiveSlideChange = useCallback(
     (slideIdx: number, step: number) => {
       const clamped = Math.max(0, Math.min(slideIdx, total - 1));
+      setSlideDirection(clamped >= currentSlide ? 'forward' : 'backward');
       setCurrentSlide(clamped);
       setCurrentStep(step);
       window.location.hash = `${clamped + 1}`;
     },
-    [total],
+    [total, currentSlide],
   );
 
   const { audienceCount, reactions, sendReaction } = useLiveSync({
@@ -199,6 +202,7 @@ export function App() {
             layout={layout}
             bg={slide.frontmatter?.bg}
             particles={slide.frontmatter?.particles === 'true'}
+            direction={slideDirection}
           />
 
           {!isAudience && (
