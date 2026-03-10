@@ -195,18 +195,63 @@ export const SlideRenderer = memo(function SlideRenderer({
       mermaid.initialize({
         startOnLoad: false,
         theme: theme === 'dark' || theme === 'retro' ? 'dark' : 'default',
+        flowchart: { useMaxWidth: false },
       });
+
+      const svgNs = 'http://www.w3.org/2000/svg';
 
       for (const div of mermaidDivs) {
         if (cancelled) break;
 
-        // Decode HTML entities from the escaped source
         const source = div.textContent || '';
         const id = `mermaid-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
         try {
           const { svg } = await mermaid.render(id, source);
           div.innerHTML = svg;
           div.setAttribute('data-mermaid-rendered', 'true');
+
+          const svgEl = div.querySelector('svg');
+          if (!svgEl) continue;
+
+          // Fix mermaid v11 foreignObject text measurement bug:
+          // Replace foreignObject labels with properly centered SVG text elements.
+          const fos = Array.from(svgEl.querySelectorAll('foreignObject'));
+          for (const fo of fos) {
+            const text = (fo.textContent || '').trim();
+            if (!text) { fo.remove(); continue; }
+
+            const w = parseFloat(fo.getAttribute('width') || '0');
+            const h = parseFloat(fo.getAttribute('height') || '0');
+            const x = parseFloat(fo.getAttribute('x') || '0');
+            const y = parseFloat(fo.getAttribute('y') || '0');
+            const isEdge = fo.closest('.edgeLabel') !== null;
+
+            const textEl = document.createElementNS(svgNs, 'text');
+            textEl.setAttribute('x', String(x + w / 2));
+            textEl.setAttribute('y', String(y + h / 2));
+            textEl.setAttribute('text-anchor', 'middle');
+            textEl.setAttribute('dominant-baseline', 'central');
+            textEl.setAttribute('fill', isEdge ? '#ccc' : '#e0e0e0');
+            textEl.setAttribute('font-size', isEdge ? '12' : '14');
+            textEl.setAttribute('font-family', 'system-ui, sans-serif');
+            textEl.textContent = text;
+            fo.parentNode?.replaceChild(textEl, fo);
+          }
+
+          // Scale SVG to fit the available space using CSS transform
+          // (preserves text/box proportions unlike viewBox scaling with foreignObject).
+          const vb = svgEl.getAttribute('viewBox')?.split(' ').map(Number);
+          if (vb && vb.length === 4) {
+            const maxH = window.innerHeight * 0.6;
+            const maxW = div.parentElement?.clientWidth || vb[2];
+            const scale = Math.min(maxW / vb[2], maxH / vb[3], 1);
+            svgEl.style.width = vb[2] + 'px';
+            svgEl.style.height = vb[3] + 'px';
+            svgEl.style.maxWidth = 'none';
+            svgEl.style.transform = `scale(${scale})`;
+            svgEl.style.transformOrigin = 'top center';
+            div.style.height = (vb[3] * scale) + 'px';
+          }
         } catch (e) {
           console.error('Mermaid render error:', source.substring(0, 60), e);
         }
