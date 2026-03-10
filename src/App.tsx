@@ -33,6 +33,8 @@ export function App() {
   const [showNotes, setShowNotes] = useState(false);
   const [showTimer, setShowTimer] = useState(true);
   const [theme, setTheme] = useState(slidesData.meta.theme || 'default');
+  const [pendingSlideNum, setPendingSlideNum] = useState('');
+  const slideNumTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { totalElapsed, slideElapsed } = useTimer(currentSlide);
 
@@ -135,13 +137,34 @@ export function App() {
       onNotes: () => setShowNotes((v) => !v),
       onPrint: () => window.print(),
       onEscape: () => {
-        if (showHelp) setShowHelp(false);
+        if (pendingSlideNum) {
+          setPendingSlideNum('');
+          if (slideNumTimeout.current) clearTimeout(slideNumTimeout.current);
+        } else if (showHelp) setShowHelp(false);
         else if (showNotes) setShowNotes(false);
         else if (showOverview) setShowOverview(false);
         else if (document.fullscreenElement) document.exitFullscreen();
       },
+      onDigit: (digit: string) => {
+        if (isAudience) return;
+        const next = pendingSlideNum + digit;
+        setPendingSlideNum(next);
+        if (slideNumTimeout.current) clearTimeout(slideNumTimeout.current);
+        slideNumTimeout.current = setTimeout(() => {
+          const num = parseInt(next, 10);
+          if (num >= 1 && num <= total) goTo(num - 1);
+          setPendingSlideNum('');
+        }, 1500);
+      },
+      onEnter: () => {
+        if (!pendingSlideNum) return;
+        if (slideNumTimeout.current) clearTimeout(slideNumTimeout.current);
+        const num = parseInt(pendingSlideNum, 10);
+        if (num >= 1 && num <= total) goTo(num - 1);
+        setPendingSlideNum('');
+      },
     }),
-    [currentSlide, currentStep, totalSteps, total, goTo, showOverview, showHelp, showNotes, isAudience],
+    [currentSlide, currentStep, totalSteps, total, goTo, showOverview, showHelp, showNotes, isAudience, pendingSlideNum],
   );
 
   useKeyboard(handlers);
@@ -218,6 +241,13 @@ export function App() {
           <div className="slide-number">
             {currentSlide + 1} / {total}
           </div>
+
+          {/* Go-to-slide number input indicator */}
+          {pendingSlideNum && (
+            <div className="slide-jump-indicator">
+              Go to slide: {pendingSlideNum}
+            </div>
+          )}
 
           {/* Clickable navigation dots */}
           {!isAudience && (

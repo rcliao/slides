@@ -13,6 +13,8 @@ interface KeyboardHandlers {
   onNotes: () => void;
   onPrint: () => void;
   onEscape: () => void;
+  onDigit?: (digit: string) => void;
+  onEnter?: () => void;
 }
 
 export function useKeyboard(handlers: KeyboardHandlers) {
@@ -87,6 +89,13 @@ export function useKeyboard(handlers: KeyboardHandlers) {
           break;
         case 'Escape':
           handlers.onEscape();
+          break;
+        case 'Enter':
+          if (handlers.onEnter) handlers.onEnter();
+          break;
+        case '0': case '1': case '2': case '3': case '4':
+        case '5': case '6': case '7': case '8': case '9':
+          if (handlers.onDigit) handlers.onDigit(e.key);
           break;
       }
     },

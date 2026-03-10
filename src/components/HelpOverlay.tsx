@@ -10,6 +10,7 @@ const SECTIONS = [
       { keys: ['h', 'k', 'Left', 'Backspace'], action: 'Previous slide / step' },
       { keys: ['g'], action: 'First slide' },
       { keys: ['G', 'End'], action: 'Last slide' },
+      { keys: ['1-9', 'Enter'], action: 'Jump to slide number' },
     ],
   },
   {

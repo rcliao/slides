@@ -35,6 +35,7 @@ Keyboard shortcuts (in presentation):
   Left / Backspace / h / k Previous slide / step
   g / Home                First slide
   G / End                 Last slide
+  1-9 + Enter             Jump to slide number
   f                       Toggle fullscreen
   o                       Toggle overview
   t                       Toggle timer

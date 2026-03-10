@@ -457,6 +457,21 @@ body,
   z-index: 100;
 }
 
+.slide-jump-indicator {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  font-family: 'Fira Code', monospace;
+  font-size: 1.5rem;
+  padding: 0.8rem 1.5rem;
+  border-radius: 12px;
+  z-index: 1000;
+  backdrop-filter: blur(8px);
+}
+
 /* === Notes Indicator === */
 
 .slide-notes-indicator {
@@ -965,6 +980,7 @@ body,
   .audience-bar,
   .help-overlay,
   .reaction-overlay,
+  .slide-jump-indicator,
   .slide-particles {
     display: none !important;
   }
