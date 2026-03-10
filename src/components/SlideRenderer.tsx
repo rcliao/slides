@@ -442,6 +442,11 @@ export const SlideRenderer = memo(function SlideRenderer({
     .filter(Boolean)
     .join(' ');
 
+  // Terminal layout: prepend macOS-style dots bar
+  const finalHtml = layout === 'terminal'
+    ? `<div class="terminal-dots"></div>${execLiveHtml}`
+    : execLiveHtml;
+
   return (
     <div className={classes} style={bgStyle}>
       {hasBg && <div className="slide-bg-overlay" />}
@@ -449,7 +454,7 @@ export const SlideRenderer = memo(function SlideRenderer({
       <div
         ref={contentRef}
         className="slide-content"
-        dangerouslySetInnerHTML={{ __html: execLiveHtml }}
+        dangerouslySetInnerHTML={{ __html: finalHtml }}
       />
     </div>
   );

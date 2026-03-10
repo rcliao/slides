@@ -200,6 +200,92 @@ body,
   min-width: 0;
 }
 
+/* Terminal layout — content rendered inside a macOS-style terminal frame */
+.slide-layout-terminal {
+  justify-content: center;
+  align-items: center;
+}
+
+.slide-layout-terminal .slide-content {
+  width: min(85%, 900px);
+  background: #0c0c0c;
+  border-radius: 12px;
+  padding: 0;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4), 0 0 30px rgba(0, 255, 0, 0.03);
+  text-align: left;
+  font-family: 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace;
+  font-size: clamp(0.8rem, 1.2vw, 1rem);
+  color: #33ff33;
+  overflow: hidden;
+}
+
+.slide-layout-terminal .terminal-dots {
+  display: flex;
+  gap: 6px;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.slide-layout-terminal .terminal-dots::before {
+  content: '● ● ●';
+  font-size: 0.7rem;
+  letter-spacing: 4px;
+  background: linear-gradient(90deg, #ff5f57 33%, #ffbd2e 33% 66%, #28ca41 66%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.slide-layout-terminal .slide-content > *:not(.terminal-dots) {
+  padding-left: 1.2rem;
+  padding-right: 1.2rem;
+}
+
+.slide-layout-terminal .slide-content > *:last-child {
+  padding-bottom: 1.2rem;
+}
+
+.slide-layout-terminal .slide-content h1,
+.slide-layout-terminal .slide-content h2,
+.slide-layout-terminal .slide-content h3 {
+  color: #4fc3f7;
+  font-family: inherit;
+}
+
+.slide-layout-terminal .slide-content p {
+  color: #ccc;
+  line-height: 1.8;
+}
+
+.slide-layout-terminal .slide-content strong {
+  color: #69f0ae;
+}
+
+.slide-layout-terminal .slide-content code {
+  color: #ffd54f;
+  background: none;
+  padding: 0;
+}
+
+.slide-layout-terminal .slide-content pre {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 0;
+  margin: 0.5rem 0;
+}
+
+.slide-layout-terminal .slide-content pre code {
+  color: #33ff33;
+}
+
+.slide-layout-terminal .slide-content ul,
+.slide-layout-terminal .slide-content ol {
+  color: #ccc;
+}
+
+.slide-layout-terminal .slide-content a {
+  color: #4fc3f7;
+}
+
 /* === Typography (responsive with clamp) === */
 
 .slide-content h1 {

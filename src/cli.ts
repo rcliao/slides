@@ -241,7 +241,8 @@ Output ONLY the raw markdown content, no code fences or explanations.
 - Aim for 8-12 slides
 - First slide: title/cover, Last slide: closing with confetti: true
 - Available themes: default, dark, retro
-- Available layouts: default, center, cover, two-column
+- Available layouts: default, center, cover, two-column, terminal
+- terminal layout: wraps content in a macOS-style terminal frame (dark bg, green monospace text, traffic light dots). Great for CLI demos, command output, or code-heavy slides
 - For two-column layout: set \`layout: two-column\` in frontmatter and use \`<!-- column -->\` to split content into left/right columns
 - Available backgrounds: castle, northlights, dawn, cherryblossom, falls, nature, bridge_raining, et, watchdogs, pixelphony_2
 
