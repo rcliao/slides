@@ -55,6 +55,23 @@ export function App() {
     [total, currentSlide],
   );
 
+  // Listen for browser back/forward navigation (hashchange)
+  useEffect(() => {
+    const onHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      const n = parseInt(hash, 10);
+      if (n >= 1 && n <= total) {
+        const idx = n - 1;
+        setSlideDirection(idx >= currentSlide ? 'forward' : 'backward');
+        setCurrentSlide(idx);
+        setCurrentStep(0);
+      }
+    };
+
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, [total, currentSlide]);
+
   // Dynamic browser tab title
   useEffect(() => {
     const title = slidesData.meta.title || 'Untitled';
