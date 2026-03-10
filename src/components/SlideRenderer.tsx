@@ -342,6 +342,17 @@ export const SlideRenderer = memo(function SlideRenderer({
   useEffect(() => {
     const el = contentRef.current;
     if (!el) return;
+
+    const liveBlocks = el.querySelectorAll<HTMLElement>('.live-block');
+    if (liveBlocks.length === 0) return;
+
+    // Snapshot each live block's HTML before scripts run, so we can restore
+    // on cleanup (needed for React StrictMode double-invoke in dev mode).
+    const snapshots = new Map<HTMLElement, string>();
+    for (const block of liveBlocks) {
+      snapshots.set(block, block.innerHTML);
+    }
+
     const scripts = el.querySelectorAll('.live-block script');
     if (scripts.length === 0) return;
 
@@ -373,6 +384,10 @@ export const SlideRenderer = memo(function SlideRenderer({
 
     return () => {
       tracker.cleanup();
+      // Restore live block HTML so StrictMode re-invocation starts clean
+      for (const [block, html] of snapshots) {
+        block.innerHTML = html;
+      }
     };
   }, [execLiveHtml]);
 
