@@ -35,8 +35,9 @@ const marked = new Marked({
       let lineHighlights = new Set<number>();
 
       // Check for {exec} and {live} annotations before line highlights
-      const execMatch = raw.match(/^(\S*)\s*\{exec\}\s*$/);
-      const liveMatch = raw.match(/^(\S*)\s*\{live\}\s*$/);
+      // Forgiving: allow spaces inside braces and case variations (e.g. { exec }, {Exec}, {LIVE})
+      const execMatch = raw.match(/^(\S*)\s*\{\s*exec\s*\}\s*$/i);
+      const liveMatch = raw.match(/^(\S*)\s*\{\s*live\s*\}\s*$/i);
 
       if (execMatch) {
         lang = execMatch[1] || 'js';
@@ -109,7 +110,7 @@ function splitByPause(content: string): string[] {
       inCodeBlock = !inCodeBlock;
     }
 
-    if (!inCodeBlock && /^\s*<!--\s*pause\s*-->\s*$/.test(line)) {
+    if (!inCodeBlock && /^\s*<!--\s*pause\s*-->\s*$/i.test(line)) {
       segments.push(current.join('\n'));
       current = [];
     } else {
@@ -217,8 +218,8 @@ export function parseSlides(markdown: string): SlidesData {
       const isTwoCol = frontmatter.layout === 'two-column';
       const steps = segments.map((seg) => {
         const trimmed = seg.trim();
-        if (isTwoCol && /^\s*<!--\s*column\s*-->\s*$/m.test(trimmed)) {
-          const cols = trimmed.split(/^\s*<!--\s*column\s*-->\s*$/m);
+        if (isTwoCol && /^\s*<!--\s*column\s*-->\s*$/im.test(trimmed)) {
+          const cols = trimmed.split(/^\s*<!--\s*column\s*-->\s*$/im);
           return cols.map((col) => `<div class="slide-col">${marked.parse(col.trim()) as string}</div>`).join('');
         }
         return marked.parse(trimmed) as string;
@@ -307,7 +308,7 @@ function analyzeContent(md: string) {
     }
 
     // Skip pause markers
-    if (/^<!--\s*pause\s*-->$/.test(trimmed)) continue;
+    if (/^<!--\s*pause\s*-->$/i.test(trimmed)) continue;
 
     // Headings
     if (/^#{1,6} /.test(trimmed)) {
