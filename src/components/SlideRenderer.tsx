@@ -71,6 +71,35 @@ function createTimerTracker() {
   };
 }
 
+/** Return a helpful hint for common {exec} errors, or null if no hint applies. */
+function getExecErrorHint(err: unknown, code: string): string | null {
+  const msg = String(err);
+
+  if (err instanceof ReferenceError) {
+    const varMatch = msg.match(/(\w+) is not defined/);
+    if (varMatch) {
+      // Check if the variable was likely declared with const/let in a previous block
+      return `Hint: Use bare assignment (${varMatch[1]} = ...) without const/let/var to share variables between {exec} blocks.`;
+    }
+  }
+
+  if (err instanceof TypeError && msg.includes('Cannot read properties of null')) {
+    if (code.includes('getElementById') || code.includes('querySelector')) {
+      return 'Hint: Use the provided `output` element instead of document.getElementById in {exec} blocks.';
+    }
+  }
+
+  if (err instanceof TypeError && msg.includes('is not a function')) {
+    return 'Hint: Check that the function exists and is spelled correctly. Imported modules are not available in {exec} blocks.';
+  }
+
+  if (err instanceof SyntaxError) {
+    return 'Hint: Check for mismatched brackets, quotes, or template literals in the code block.';
+  }
+
+  return null;
+}
+
 /** Decode {live} blocks, replacing marker divs with rendered HTML. */
 function processLiveBlocks(html: string): string {
   const liveRegex = /<div class="live-block" data-code="([^"]+)"><\/div>/g;
@@ -162,7 +191,6 @@ export const SlideRenderer = memo(function SlideRenderer({
       mermaid.initialize({
         startOnLoad: false,
         theme: theme === 'dark' || theme === 'retro' ? 'dark' : 'default',
-        flowchart: { htmlLabels: false },
       });
 
       let result = execLiveHtml;
@@ -178,20 +206,7 @@ export const SlideRenderer = memo(function SlideRenderer({
 
         const id = `mermaid-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
         try {
-          // Create a container in normal flow so mermaid can measure text properly
-          const renderContainer = document.createElement('div');
-          renderContainer.id = id;
-          renderContainer.style.position = 'fixed';
-          renderContainer.style.top = '0';
-          renderContainer.style.left = '0';
-          renderContainer.style.width = '100%';
-          renderContainer.style.opacity = '0';
-          renderContainer.style.pointerEvents = 'none';
-          renderContainer.style.zIndex = '-1';
-          document.body.appendChild(renderContainer);
-
-          const { svg } = await mermaid.render(id, source, renderContainer);
-          renderContainer.remove();
+          const { svg } = await mermaid.render(id, source);
           replacements.push([match[0], `<div class="mermaid" data-mermaid-rendered="true">${svg}</div>`]);
         } catch (e) {
           console.error('Mermaid render error:', source.substring(0, 60), e);
@@ -271,6 +286,8 @@ export const SlideRenderer = memo(function SlideRenderer({
         }
       } catch (err) {
         appendLine(String(err), 'exec-output-error');
+        const hint = getExecErrorHint(err, code);
+        if (hint) appendLine(hint, 'exec-output-hint');
       }
 
       // Remove injected helpers so user code can't accidentally overwrite them

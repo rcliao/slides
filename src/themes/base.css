@@ -694,6 +694,13 @@ body,
   color: #ef4444;
 }
 
+.exec-output-hint {
+  color: #94a3b8;
+  font-style: italic;
+  font-size: 0.85em;
+  margin-top: 0.25rem;
+}
+
 .exec-output-warn {
   color: #f59e0b;
 }
