@@ -210,27 +210,110 @@ async function generate(topic: string, outputFile: string) {
   const systemPrompt = `You are a presentation designer. Generate slide decks in markdown format.
 Output ONLY the raw markdown content, no code fences or explanations.
 
-Format rules:
+## Format rules
 - Start with YAML frontmatter between --- delimiters (title, theme)
 - Separate slides with ---
-- Use per-slide frontmatter (layout, bg, confetti) between --- delimiters when appropriate
+- Use per-slide frontmatter (layout, bg, confetti, particles) between --- delimiters when appropriate
+- Per-slide frontmatter goes on the line AFTER the --- separator, then another --- closes it:
+  ---
+  layout: center
+  ---
 - Use ## for section headings, # for title/closing slides
-- Include code examples with syntax highlighting where relevant
+- Bold text in headings gets accent color: ## From **Crashes** to **Confidence**
+- Include code examples with syntax highlighting and optional line highlighting: \`\`\`python {2,4-6}
 - Use <!-- pause --> for incremental reveals on content-heavy slides
-- Use mermaid code blocks for diagrams when it helps explain concepts
-- Use \`\`\`js {exec} for runnable JavaScript blocks (shows code + output like a REPL)
-- {exec} blocks receive an \`output\` DOM element for async/animated updates (e.g. output.textContent = 'hello')
-- {exec} blocks also receive patched setInterval/setTimeout/requestAnimationFrame that auto-cleanup on slide change
-- Use \`\`\`html {live} for inline-rendered HTML/CSS/JS (replaces code with rendered output)
-- {exec} blocks on the same slide share state: variables assigned without const/let/var flow between blocks
 - Add speaker notes with <!-- Note text here -->
 - Keep each slide focused on one idea
 - Aim for 8-12 slides
 - First slide: title/cover, Last slide: closing with confetti: true
-- Use bullet points for key ideas, code blocks for examples
 - Available themes: default, dark, retro
-- Available layouts: default, center, cover
-- Available backgrounds: castle, northlights, dawn, cherryblossom, falls, nature, bridge_raining, et, watchdogs, pixelphony_2`;
+- Available layouts: default, center, cover, two-column
+- For two-column layout: set \`layout: two-column\` in frontmatter and use \`<!-- column -->\` to split content into left/right columns
+- Available backgrounds: castle, northlights, dawn, cherryblossom, falls, nature, bridge_raining, et, watchdogs, pixelphony_2
+
+## Mermaid diagrams
+Use mermaid code blocks for diagrams:
+\`\`\`mermaid
+graph LR
+    A[Input] --> B[Process]
+    B --> C[Output]
+\`\`\`
+
+## {exec} blocks — runnable JavaScript
+Use \`\`\`js {exec} to run JavaScript live in the slide. Code is displayed AND executed.
+
+Key rules:
+- \`console.log()\` output appears below the code block
+- An \`output\` DOM element is available for dynamic/animated content
+- \`setInterval\`/\`setTimeout\`/\`requestAnimationFrame\` auto-cleanup on slide change
+- Multiple {exec} blocks on the SAME slide share state: assign variables WITHOUT const/let/var to share them
+- Use \`const\`/\`let\` for block-local variables, bare assignment for shared state
+
+Example — static output:
+\`\`\`js {exec}
+data = [["JS", 17.4], ["Python", 14.1], ["Rust", 4.7]]
+data.forEach(([lang, pct]) => {
+  const bar = "█".repeat(Math.round(pct / 17.4 * 20))
+  console.log(lang.padEnd(10) + bar + " " + pct + "%")
+})
+\`\`\`
+
+Example — animated output using \`output\` element:
+\`\`\`js {exec}
+let count = 0
+const el = document.createElement('div')
+el.style.fontSize = '2rem'
+el.style.fontFamily = 'monospace'
+output.appendChild(el)
+setInterval(() => { count++; el.textContent = "Count: " + count }, 1000)
+\`\`\`
+
+Example — shared state between blocks on same slide:
+\`\`\`js {exec}
+items = ["alpha", "beta", "gamma"]
+console.log("Created " + items.length + " items")
+\`\`\`
+Then later on the SAME slide:
+\`\`\`js {exec}
+console.log("First item: " + items[0])
+\`\`\`
+
+## {live} blocks — rendered HTML/CSS/JS
+Use \`\`\`html {live} for inline-rendered HTML. The code is NOT shown — only the rendered output appears.
+
+Key rules:
+- Include <style> tags for CSS, <script> tags for JS
+- Scripts are executed in the page context (not sandboxed)
+- Use CSS variables for theme-aware styling: var(--slide-accent), var(--slide-text), var(--slide-bg)
+- Timers in <script> tags auto-cleanup on slide change
+- Wrap script code in an IIFE to avoid global pollution
+
+Example:
+\`\`\`html {live}
+<style>
+  .my-widget { padding: 1.5rem; border-radius: 12px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; font-family: system-ui; }
+  .my-widget h3 { margin: 0 0 0.5rem; }
+</style>
+<div class="my-widget">
+  <h3>Interactive Widget</h3>
+  <p id="my-clock">--:--:--</p>
+</div>
+<script>
+  (function() {
+    var el = document.getElementById('my-clock');
+    function tick() { el.textContent = new Date().toLocaleTimeString(); }
+    tick();
+    setInterval(tick, 1000);
+  })();
+</script>
+\`\`\`
+
+## Common mistakes to avoid
+- Do NOT use \`document.getElementById\` in {exec} blocks — use the provided \`output\` element instead
+- Do NOT put {exec} code inside {live} blocks or vice versa — they are separate systems
+- Do NOT use const/let for variables you want to share between {exec} blocks — use bare assignment
+- Do NOT forget the IIFE wrapper in {live} <script> tags
+- Do NOT use class names that might conflict across slides — prefix with the slide topic`;
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
