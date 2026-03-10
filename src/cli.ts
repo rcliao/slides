@@ -38,6 +38,7 @@ Keyboard shortcuts (in presentation):
   f                       Toggle fullscreen
   o                       Toggle overview
   t                       Toggle timer
+  n                       Toggle speaker notes
   d                       Cycle themes
   ?                       Toggle help overlay
   Escape                  Close overlay

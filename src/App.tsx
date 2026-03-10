@@ -5,6 +5,7 @@ import { Timer } from './components/Timer';
 import { ProgressBar } from './components/ProgressBar';
 import { SlideOverview } from './components/SlideOverview';
 import { HelpOverlay } from './components/HelpOverlay';
+import { SpeakerNotes } from './components/SpeakerNotes';
 import { ReactionOverlay } from './components/ReactionOverlay';
 import { AudienceBar } from './components/AudienceBar';
 import { useKeyboard } from './hooks/useKeyboard';
@@ -28,6 +29,7 @@ export function App() {
   const [currentStep, setCurrentStep] = useState(0);
   const [showOverview, setShowOverview] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
   const [showTimer, setShowTimer] = useState(true);
   const [theme, setTheme] = useState(slidesData.meta.theme || 'default');
 
@@ -127,13 +129,15 @@ export function App() {
           return THEMES[(idx + 1) % THEMES.length];
         }),
       onHelp: () => setShowHelp((v) => !v),
+      onNotes: () => setShowNotes((v) => !v),
       onEscape: () => {
         if (showHelp) setShowHelp(false);
+        else if (showNotes) setShowNotes(false);
         else if (showOverview) setShowOverview(false);
         else if (document.fullscreenElement) document.exitFullscreen();
       },
     }),
-    [currentSlide, currentStep, totalSteps, total, goTo, showOverview, showHelp, isAudience],
+    [currentSlide, currentStep, totalSteps, total, goTo, showOverview, showHelp, showNotes, isAudience],
   );
 
   useKeyboard(handlers);
@@ -236,8 +240,16 @@ export function App() {
             </div>
           )}
 
-          {slide.notes && !isAudience && (
-            <div className="slide-notes-indicator" title={slide.notes}>
+          {slide.notes && !isAudience && showNotes && (
+            <SpeakerNotes notes={slide.notes} onClose={() => setShowNotes(false)} />
+          )}
+
+          {slide.notes && !isAudience && !showNotes && (
+            <div
+              className="slide-notes-indicator"
+              title="Press n to show notes"
+              onClick={() => setShowNotes(true)}
+            >
               notes
             </div>
           )}

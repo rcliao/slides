@@ -18,6 +18,7 @@ const SECTIONS = [
       { keys: ['f'], action: 'Toggle fullscreen' },
       { keys: ['o'], action: 'Toggle overview' },
       { keys: ['t'], action: 'Toggle timer' },
+      { keys: ['n'], action: 'Toggle speaker notes' },
       { keys: ['d'], action: 'Cycle themes' },
     ],
   },

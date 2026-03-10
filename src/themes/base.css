@@ -454,8 +454,69 @@ body,
   color: var(--slide-accent);
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  cursor: help;
+  cursor: pointer;
   z-index: 100;
+}
+
+.slide-notes-indicator:hover {
+  opacity: 0.7;
+}
+
+/* === Speaker Notes Panel === */
+
+.speaker-notes {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.speaker-notes-content {
+  width: 100%;
+  max-height: 40vh;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+  display: flex;
+  flex-direction: column;
+}
+
+.speaker-notes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--slide-accent, #3b82f6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.speaker-notes-close {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 0.25rem;
+  line-height: 1;
+}
+
+.speaker-notes-close:hover {
+  color: #e2e8f0;
+}
+
+.speaker-notes-body {
+  padding: 1rem 1.5rem;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  overflow-y: auto;
+  white-space: pre-wrap;
 }
 
 /* === Overview === */
