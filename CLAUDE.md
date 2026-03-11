@@ -23,7 +23,7 @@ npm run build                        # Production build (tsc + vite)
 | File | Role |
 |------|------|
 | `src/cli.ts` | CLI entry point. Commands: serve, new, build, generate. Parses flags, creates Vite server. |
-| `src/parser.ts` | Markdown-to-slides parser. Splits by `---`, parses frontmatter, detects `{exec}`/`{live}`/mermaid code blocks, splits `<!-- pause -->` for incremental reveal, auto-detects layout. |
+| `src/parser.ts` | Markdown-to-slides parser. Splits by `---`, parses frontmatter, detects `{exec}`/`{live}`/mermaid code blocks, splits `<!-- pause -->` for incremental reveal, auto-detects layout. Also exports `validateSlides()` for linting. |
 | `src/App.tsx` | Main React app. Manages slide index, step, theme state. Keyboard/touch event handlers. Hash-based navigation. |
 | `src/components/SlideRenderer.tsx` | Core slide rendering. Executes `{exec}` blocks (Proxy-based scope sharing), decodes and renders `{live}` blocks, renders mermaid diagrams, manages timer auto-cleanup. Wrapped in `React.memo`. |
 | `src/components/HelpOverlay.tsx` | `?` key overlay showing all keyboard shortcuts. |
@@ -49,6 +49,8 @@ npm run build                        # Production build (tsc + vite)
 - Injected into the DOM via `innerHTML`
 - `<script>` tags are reactivated by cloning and replacing each script element (browsers don't execute scripts set via innerHTML)
 - Timer functions inside `{live}` scripts are monkey-patched at the window level and tracked for auto-cleanup
+- Cleanup snapshots and restores each live block's innerHTML (needed for React StrictMode double-invoke in dev mode)
+- `.live-block` has `text-align: left` to prevent inheriting center alignment from slide layouts
 
 **Mermaid:**
 - Detected by `lang === 'mermaid'` in parser, passed through as escaped HTML
@@ -63,6 +65,7 @@ npm run build                        # Production build (tsc + vite)
 - Light content (blockquote only, or heading + ≤2 blocks) → `center`
 - Everything else → `default`
 - `two-column` — set explicitly via frontmatter; uses `<!-- column -->` marker to split content into left/right CSS grid columns; heading above columns spans full width
+- `terminal` — macOS-style terminal frame with traffic light dots, dark bg, green monospace text; headings are cyan, bold is green, inline code is yellow; set via `layout: terminal` in frontmatter; dots injected by SlideRenderer when layout is 'terminal'
 
 **SlideRenderer memo:**
 - Wrapped in `React.memo` to prevent re-renders that would destroy interactive DOM state ({exec} outputs, {live} widgets, mermaid SVGs)
@@ -70,7 +73,12 @@ npm run build                        # Production build (tsc + vite)
 **Virtual module pattern:**
 - `vite-plugin-slides.ts` serves slide data as `virtual:slides-data`
 - On markdown file change, invalidates the virtual module for HMR
-- Live sync uses a WebSocket server on `/live-ws` to broadcast slide changes to audience clients
+- Live sync uses a WebSocket server on `/live-ws` to broadcast slide changes to audience clients; `useLiveSync` stabilizes the `onSlideChange` callback with a ref to prevent WebSocket reconnects on every slide change
+
+**Ref stabilization pattern (used in useLiveSync, SlideOverview):**
+- When a `useEffect` depends on a callback prop or frequently-changing value, use a ref to avoid unnecessary effect re-runs
+- Store the value in a ref (`const ref = useRef(value); ref.current = value;`), read from `ref.current` inside the effect, and remove the value from the dependency array
+- This prevents teardown/setup cycles for WebSocket connections, event listeners, etc.
 
 **Parser resilience (for LLM-generated content):**
 - Annotations are case-insensitive and space-tolerant: `{exec}`, `{ Exec }`, `{LIVE}` all work
@@ -87,8 +95,12 @@ npm run build                        # Production build (tsc + vite)
 - Dynamic browser tab title: `"Title — N/M"` format
 - Error hints for {exec} blocks: contextual fix suggestions for common errors (ReferenceError, TypeError, SyntaxError)
 - Inline error display for {live} blocks: script errors shown as `.live-block-error` elements
-- Overview mode: `o` key shows grid of slide thumbnails; navigation keys disabled while open
+- Overview mode: `o` key shows grid of slide thumbnails; arrow keys/hjkl navigate grid, Enter selects; navigation keys disabled while open
 - Help overlay: `?` key shows all keyboard shortcuts
+- Copy button on code blocks: appears on hover (top-right), copies code text to clipboard, shows "Copied!" feedback; works for regular code and {exec} blocks; hidden in print
+- Auto-advance mode: `a` key toggles; advances slides/steps every 5s, loops at end; pulsing "Auto" badge in top-right; disabled for audience and overview
+- Browser back/forward: `hashchange` listener syncs slide state with browser history (each slide change creates a history entry via `window.location.hash`)
+- Slide markdown validator: `validateSlides()` in parser.ts checks for const/let in {exec} blocks, missing IIFE in {live} scripts, missing `<!-- column -->` in two-column layout; integrated into both `serve` (startup) and `generate` (post-output)
 
 ## Style conventions
 
