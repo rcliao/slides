@@ -893,6 +893,7 @@ pre:hover .code-copy-btn {
   background: color-mix(in srgb, var(--slide-code-bg) 80%, black);
   border: 1px solid var(--slide-border);
   border-top: 2px solid var(--slide-accent);
+  text-align: left;
   border-bottom-left-radius: 8px;
   border-bottom-right-radius: 8px;
   padding: 0.8rem 1.2rem;
@@ -929,6 +930,7 @@ pre:hover .code-copy-btn {
   padding: 1.5rem;
   margin-bottom: 1.2rem;
   background: color-mix(in srgb, var(--slide-code-bg) 50%, transparent);
+  text-align: left;
 }
 
 .live-block-error {
