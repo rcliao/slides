@@ -34,6 +34,7 @@ export function App() {
   const [showTimer, setShowTimer] = useState(true);
   const [theme, setTheme] = useState(slidesData.meta.theme || 'default');
   const [pendingSlideNum, setPendingSlideNum] = useState('');
+  const [autoAdvance, setAutoAdvance] = useState(false);
   const slideNumTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { totalElapsed, slideElapsed } = useTimer(currentSlide);
@@ -111,6 +112,25 @@ export function App() {
     onSlideChange: onLiveSlideChange,
   });
 
+  // Auto-advance: move forward every 5 seconds when enabled
+  useEffect(() => {
+    if (!autoAdvance || isAudience || showOverview) return;
+    const interval = setInterval(() => {
+      // Advance step or slide, wrapping to first slide at the end
+      setCurrentStep((step) => {
+        const maxStep = slidesData.slides[currentSlide]?.totalSteps || 1;
+        if (step < maxStep - 1) return step + 1;
+        // Move to next slide (or wrap to first)
+        const nextSlide = currentSlide + 1 >= total ? 0 : currentSlide + 1;
+        setSlideDirection('forward');
+        setCurrentSlide(nextSlide);
+        window.location.hash = `${nextSlide + 1}`;
+        return 0;
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [autoAdvance, currentSlide, total, isAudience, showOverview]);
+
   const handlers = useMemo(
     () => ({
       onNext: () => {
@@ -159,6 +179,10 @@ export function App() {
       onHelp: () => setShowHelp((v) => !v),
       onNotes: () => setShowNotes((v) => !v),
       onPrint: () => window.print(),
+      onAutoAdvance: () => {
+        if (isAudience) return;
+        setAutoAdvance((v) => !v);
+      },
       onEscape: () => {
         if (pendingSlideNum) {
           setPendingSlideNum('');
@@ -269,6 +293,13 @@ export function App() {
           {pendingSlideNum && (
             <div className="slide-jump-indicator">
               Go to slide: {pendingSlideNum}
+            </div>
+          )}
+
+          {/* Auto-advance indicator */}
+          {autoAdvance && (
+            <div className="auto-advance-indicator" onClick={() => setAutoAdvance(false)}>
+              Auto
             </div>
           )}
 

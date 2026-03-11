@@ -12,6 +12,7 @@ interface KeyboardHandlers {
   onHelp: () => void;
   onNotes: () => void;
   onPrint: () => void;
+  onAutoAdvance?: () => void;
   onEscape: () => void;
   onDigit?: (digit: string) => void;
   onEnter?: () => void;
@@ -83,6 +84,9 @@ export function useKeyboard(handlers: KeyboardHandlers) {
           break;
         case 'p':
           handlers.onPrint();
+          break;
+        case 'a':
+          if (handlers.onAutoAdvance) handlers.onAutoAdvance();
           break;
         case '?':
           handlers.onHelp();

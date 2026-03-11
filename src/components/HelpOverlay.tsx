@@ -22,6 +22,7 @@ const SECTIONS = [
       { keys: ['n'], action: 'Toggle speaker notes' },
       { keys: ['d'], action: 'Cycle themes' },
       { keys: ['p'], action: 'Print / export PDF' },
+      { keys: ['a'], action: 'Toggle auto-advance (5s)' },
     ],
   },
   {

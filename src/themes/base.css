@@ -558,6 +558,30 @@ body,
   backdrop-filter: blur(8px);
 }
 
+/* === Auto-advance Indicator === */
+
+.auto-advance-indicator {
+  position: fixed;
+  top: 0.8rem;
+  right: 1.5rem;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--slide-accent);
+  background: color-mix(in srgb, var(--slide-accent) 15%, transparent);
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  cursor: pointer;
+  z-index: 100;
+  animation: auto-pulse 2s ease-in-out infinite;
+}
+
+@keyframes auto-pulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
 /* === Notes Indicator === */
 
 .slide-notes-indicator {
@@ -1110,6 +1134,7 @@ pre:hover .code-copy-btn {
   .help-overlay,
   .reaction-overlay,
   .slide-jump-indicator,
+  .auto-advance-indicator,
   .slide-particles {
     display: none !important;
   }
