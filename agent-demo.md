@@ -193,6 +193,26 @@ The agent **reads** this and reasons about layout, density, and pacing.
 Full-screen terminal presentation. No browser. SSH-friendly.
 
 ---
+layout: terminal
+---
+
+## Typewriter Animation
+
+```typewriter
+$ slides generate "Intro to WebAssembly"
+Generating presentation...
+✓ Generated: intro-wasm.md (10 slides)
+
+$ slides lint intro-wasm.md --json
+✓ Valid: 0 errors, 1 warning
+
+$ slides tui intro-wasm.md
+Presenting...
+```
+
+Types out character-by-character in TUI mode!
+
+---
 layout: center
 ---
 

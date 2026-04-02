@@ -217,6 +217,7 @@ export function lintSlides(markdown: string, file?: string): LintReport {
       const firstLine = codeMatch[0].split('\n')[0];
       if (/\{\s*pixels\s*\}/i.test(firstLine) || /^```\s*pixels\s*$/i.test(firstLine)) continue;
       if (/\{\s*bigtext\s*\}/i.test(firstLine) || /^```\s*bigtext\s*$/i.test(firstLine)) continue;
+      if (/\{\s*typewriter\s*\}/i.test(firstLine) || /^```\s*typewriter\s*$/i.test(firstLine)) continue;
       const codeLines = codeMatch[0].split('\n').length - 2; // minus opening/closing fences
       if (codeLines > 15) {
         results.push({

@@ -69,6 +69,13 @@ const marked = new Marked({
         return `<div class="bigtext-block">${htmlLines}</div>`;
       }
 
+      // {typewriter} — animated typing effect (shows as styled terminal text in browser)
+      const typewriterMatch = raw.match(/^(\S*)\s*\{\s*typewriter\s*\}\s*$/i);
+      if (typewriterMatch || raw.trim().toLowerCase() === 'typewriter') {
+        const htmlLines = text.split('\n').map(line => escapeHtml(line)).join('\n');
+        return `<div class="typewriter-block"><pre class="typewriter-text">${htmlLines}</pre></div>`;
+      }
+
       // {pixels} — pixel art (terminal only, show placeholder in browser)
       const pixelsMatch = raw.match(/^(\S*)\s*\{\s*pixels\s*\}\s*$/i);
       if (pixelsMatch || raw.trim().toLowerCase() === 'pixels') {

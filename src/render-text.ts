@@ -112,6 +112,7 @@ function renderMarkdownLines(rawMarkdown: string, width: number, nc: boolean): s
   let codeLang = '';
   let isPixelBlock = false;
   let isBigTextBlock = false;
+  let isTypewriterBlock = false;
   let codeBuffer: string[] = [];
   const codeWidth = Math.max(10, width - 4);
 
@@ -136,7 +137,8 @@ function renderMarkdownLines(rawMarkdown: string, width: number, nc: boolean): s
         codeLang = fullAnnotation.replace(/\s*\{.*\}/, '').trim();
         isPixelBlock = /\{\s*pixels\s*\}/i.test(fullAnnotation) || codeLang.toLowerCase() === 'pixels';
         isBigTextBlock = /\{\s*bigtext\s*\}/i.test(fullAnnotation) || codeLang.toLowerCase() === 'bigtext';
-        if (!isPixelBlock && !isBigTextBlock) {
+        isTypewriterBlock = /\{\s*typewriter\s*\}/i.test(fullAnnotation) || codeLang.toLowerCase() === 'typewriter';
+        if (!isPixelBlock && !isBigTextBlock && !isTypewriterBlock) {
           const label = codeLang ? ` ${codeLang} ` : '';
           lines.push(c(DIM, `  ┌${'─'.repeat(codeWidth)}┐`, nc));
           if (label) {
@@ -149,6 +151,12 @@ function renderMarkdownLines(rawMarkdown: string, width: number, nc: boolean): s
           const grid = parsePixelGrid(codeBuffer.join('\n'));
           const pixelLines = renderPixelArt(grid, nc);
           lines.push(...pixelLines);
+        } else if (isTypewriterBlock) {
+          // In print mode, show as static green terminal text
+          for (const bufLine of codeBuffer) {
+            if (bufLine.trim() === '') { lines.push(''); continue; }
+            lines.push(`  ${c(GREEN, bufLine, nc)}`);
+          }
         } else if (isBigTextBlock) {
           // Render each line as block font
           const text = codeBuffer.join('\n').trim();
@@ -175,13 +183,14 @@ function renderMarkdownLines(rawMarkdown: string, width: number, nc: boolean): s
         codeLang = '';
         isPixelBlock = false;
         isBigTextBlock = false;
+        isTypewriterBlock = false;
         codeBuffer = [];
       }
       continue;
     }
 
     if (inCodeBlock) {
-      if (isPixelBlock || isBigTextBlock) {
+      if (isPixelBlock || isBigTextBlock || isTypewriterBlock) {
         codeBuffer.push(line);
       } else {
         lines.push(`  ${c(DIM, '│', nc)} ${c(GREEN, line, nc)}`);

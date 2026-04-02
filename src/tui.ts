@@ -11,8 +11,8 @@ const BOLD = `${ESC}[1m`;
 const DIM = `${ESC}[2m`;
 const CYAN = `${ESC}[36m`;
 const YELLOW = `${ESC}[33m`;
+const GREEN = `${ESC}[32m`;
 const RESET = `${ESC}[0m`;
-
 
 export async function tui(filePath: string) {
   const fs = await import('fs');
@@ -27,31 +27,29 @@ export async function tui(filePath: string) {
 
   let currentSlide = 0;
   let currentStep = 0;
+  let animating = false;
+  let typewriterTimer: ReturnType<typeof setTimeout> | null = null;
 
   const getTermSize = () => ({
     cols: process.stdout.columns || 80,
     rows: process.stdout.rows || 24,
   });
 
-  function render() {
+  /**
+   * Check if the current slide's raw markdown contains a typewriter block.
+   * Returns the lines to animate, or null if no typewriter block.
+   */
+  function getTypewriterContent(md: string): string[] | null {
+    const match = md.match(/```(?:\S*\s*)?\{\s*typewriter\s*\}.*\n([\s\S]*?)```/i)
+      || md.match(/```typewriter\s*\n([\s\S]*?)```/i);
+    if (!match) return null;
+    return match[1].split('\n');
+  }
+
+  function buildFrame(renderedLines: string[]): string {
     const { cols, rows } = getTermSize();
     const slide = parsed.slides[currentSlide];
-    const width = Math.min(cols, 120);
 
-    // Get the rendered lines for the current step
-    let md: string;
-    if (slide.steps && slide.steps.length > 1) {
-      // For incremental reveal, reconstruct markdown up to current step
-      // We use rawMarkdown split by pause markers
-      const segments = slide.rawMarkdown.split(/\s*<!--\s*pause\s*-->\s*/i);
-      md = segments.slice(0, currentStep + 1).join('\n\n');
-    } else {
-      md = slide.rawMarkdown;
-    }
-
-    const renderedLines = renderSlideToText(md, { width });
-
-    // Build the frame
     let output = CLEAR;
 
     // Title bar
@@ -65,8 +63,8 @@ export async function tui(filePath: string) {
     output += left + ' '.repeat(titleBarPad) + right + '\n';
     output += `${DIM}${'─'.repeat(cols)}${RESET}\n`;
 
-    // Content area — vertically center the rendered lines
-    const contentHeight = rows - 4; // title bar (2 lines) + footer (2 lines)
+    // Content area — vertically center
+    const contentHeight = rows - 4;
     const verticalPad = Math.max(0, Math.floor((contentHeight - renderedLines.length) / 2));
 
     for (let i = 0; i < contentHeight; i++) {
@@ -79,43 +77,178 @@ export async function tui(filePath: string) {
 
     // Footer
     output += `${DIM}${'─'.repeat(cols)}${RESET}\n`;
-    const helpText = ` ${DIM}←/→ navigate  q quit  g first  G last  ? help${RESET}`;
-    output += helpText;
+    output += ` ${DIM}←/→ navigate  q quit  g first  G last  ? help${RESET}`;
 
-    process.stdout.write(output);
+    return output;
+  }
+
+  function render() {
+    const { cols } = getTermSize();
+    const slide = parsed.slides[currentSlide];
+    const width = Math.min(cols, 120);
+
+    let md: string;
+    if (slide.steps && slide.steps.length > 1) {
+      const segments = slide.rawMarkdown.split(/\s*<!--\s*pause\s*-->\s*/i);
+      md = segments.slice(0, currentStep + 1).join('\n\n');
+    } else {
+      md = slide.rawMarkdown;
+    }
+
+    const renderedLines = renderSlideToText(md, { width });
+    process.stdout.write(buildFrame(renderedLines));
+  }
+
+  /**
+   * Slide transition: wipe effect (lines slide in from right).
+   */
+  async function transitionTo(direction: 'forward' | 'backward') {
+    if (animating) return;
+    animating = true;
+
+    const { cols } = getTermSize();
+    const width = Math.min(cols, 120);
+
+    // Render the new slide's content
+    const slide = parsed.slides[currentSlide];
+    const md = slide.rawMarkdown;
+    const newLines = renderSlideToText(md, { width });
+
+    const steps = 4;
+    const delay = 25;
+
+    for (let step = 0; step < steps; step++) {
+      const fraction = (step + 1) / steps;
+      const visibleCount = Math.ceil(newLines.length * fraction);
+
+      const partialLines: string[] = [];
+      for (let i = 0; i < newLines.length; i++) {
+        if (direction === 'forward') {
+          // Lines reveal top-to-bottom
+          partialLines.push(i < visibleCount ? newLines[i] : '');
+        } else {
+          // Lines reveal bottom-to-top
+          partialLines.push(i >= newLines.length - visibleCount ? newLines[i] : '');
+        }
+      }
+
+      process.stdout.write(buildFrame(partialLines));
+      await sleep(delay);
+    }
+
+    // Final clean render
+    process.stdout.write(buildFrame(newLines));
+    animating = false;
+
+    // Start typewriter if this slide has one
+    startTypewriterIfNeeded();
+  }
+
+  /**
+   * Typewriter animation: types out content character by character.
+   */
+  function startTypewriterIfNeeded() {
+    const slide = parsed.slides[currentSlide];
+    const twContent = getTypewriterContent(slide.rawMarkdown);
+    if (!twContent) return;
+
+    const twLines = twContent; // capture for closure
+    const { cols } = getTermSize();
+    const width = Math.min(cols, 120);
+
+    // Render the slide but replace typewriter block content with progressive reveal
+    let charIndex = 0;
+    const totalChars = twLines.reduce((sum, line) => sum + line.length + 1, 0);
+
+    function typewriterFrame() {
+      let remaining = charIndex;
+      const partialLines: string[] = [];
+      for (const line of twLines) {
+        if (remaining <= 0) {
+          break;
+        } else if (remaining >= line.length) {
+          partialLines.push(line);
+          remaining -= line.length + 1;
+        } else {
+          partialLines.push(line.slice(0, remaining));
+          remaining = 0;
+        }
+      }
+
+      // Reconstruct the slide markdown with partial typewriter content
+      const partialTw = partialLines.join('\n');
+      const fullMd = slide.rawMarkdown
+        .replace(/```(?:\S*\s*)?\{\s*typewriter\s*\}.*\n[\s\S]*?```/i, partialTw)
+        .replace(/```typewriter\s*\n[\s\S]*?```/i, partialTw);
+
+      const renderedLines = renderSlideToText(fullMd, { width });
+
+      // Add a blinking cursor effect at the end of the last typed line
+      if (charIndex < totalChars && renderedLines.length > 0) {
+        const lastIdx = renderedLines.length - 1;
+        renderedLines[lastIdx] = renderedLines[lastIdx] + `${GREEN}█${RESET}`;
+      }
+
+      process.stdout.write(buildFrame(renderedLines));
+
+      charIndex++;
+      if (charIndex <= totalChars) {
+        typewriterTimer = setTimeout(typewriterFrame, 30);
+      } else {
+        typewriterTimer = null;
+      }
+    }
+
+    // Small delay before starting
+    typewriterTimer = setTimeout(typewriterFrame, 200);
+  }
+
+  function stopTypewriter() {
+    if (typewriterTimer) {
+      clearTimeout(typewriterTimer);
+      typewriterTimer = null;
+    }
   }
 
   function next() {
+    stopTypewriter();
     const slide = parsed.slides[currentSlide];
     if (currentStep < slide.totalSteps - 1) {
       currentStep++;
+      render();
     } else if (currentSlide < totalSlides - 1) {
       currentSlide++;
       currentStep = 0;
+      transitionTo('forward');
     }
-    render();
   }
 
   function prev() {
+    stopTypewriter();
     if (currentStep > 0) {
       currentStep--;
+      render();
     } else if (currentSlide > 0) {
       currentSlide--;
       currentStep = parsed.slides[currentSlide].totalSteps - 1;
+      transitionTo('backward');
     }
-    render();
   }
 
   function first() {
+    stopTypewriter();
     currentSlide = 0;
     currentStep = 0;
     render();
+    startTypewriterIfNeeded();
   }
 
   function last() {
+    stopTypewriter();
     currentSlide = totalSlides - 1;
     currentStep = 0;
     render();
+    startTypewriterIfNeeded();
   }
 
   let showHelp = false;
@@ -151,6 +284,7 @@ export async function tui(filePath: string) {
   }
 
   function cleanup() {
+    stopTypewriter();
     process.stdout.write(CURSOR_SHOW + ALT_SCREEN_OFF);
     process.stdin.setRawMode(false);
     process.stdin.pause();
@@ -175,60 +309,53 @@ export async function tui(filePath: string) {
     else render();
   });
 
-  // Initial render
+  // Initial render + typewriter
   render();
+  startTypewriterIfNeeded();
 
   // Key handling
   process.stdin.on('data', (key: string) => {
-    // Ctrl+C
     if (key === '\x03') {
       cleanup();
       process.exit(0);
     }
 
+    if (animating) return; // ignore input during transitions
+
     if (showHelp) {
       showHelp = false;
       render();
+      startTypewriterIfNeeded();
       return;
     }
 
     switch (key) {
-      // Quit
       case 'q':
         cleanup();
         process.exit(0);
         break;
-
-      // Next
       case ' ':
       case 'l':
       case 'j':
-      case '\x1b[C': // Right arrow
+      case '\x1b[C':
         next();
         break;
-
-      // Previous
       case 'h':
       case 'k':
-      case '\x1b[D': // Left arrow
-      case '\x7f':   // Backspace
+      case '\x1b[D':
+      case '\x7f':
         prev();
         break;
-
-      // First
       case 'g':
-      case '\x1b[H': // Home
+      case '\x1b[H':
         first();
         break;
-
-      // Last
       case 'G':
-      case '\x1b[F': // End
+      case '\x1b[F':
         last();
         break;
-
-      // Help
       case '?':
+        stopTypewriter();
         showHelp = true;
         renderHelp();
         break;
@@ -238,4 +365,8 @@ export async function tui(filePath: string) {
 
 function stripAnsi(str: string): string {
   return str.replace(/\x1b\[[0-9;]*m/g, '');
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
