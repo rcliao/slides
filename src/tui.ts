@@ -120,7 +120,14 @@ export async function tui(filePath: string) {
     const width = Math.min(cols, 120);
 
     // Render the new slide's content (respecting incremental reveal steps)
-    const md = getCurrentMarkdown();
+    // Strip typewriter blocks so they don't flash during transition
+    let md = getCurrentMarkdown();
+    const hasTw = !!getTypewriterContent(md);
+    if (hasTw) {
+      md = md
+        .replace(/```(?:\S*\s*)?\{\s*typewriter\s*\}.*\n[\s\S]*?```/i, '')
+        .replace(/```typewriter\s*\n[\s\S]*?```/i, '');
+    }
     const newLines = renderSlideToText(md, { width });
 
     const steps = 4;
@@ -133,10 +140,8 @@ export async function tui(filePath: string) {
       const partialLines: string[] = [];
       for (let i = 0; i < newLines.length; i++) {
         if (direction === 'forward') {
-          // Lines reveal top-to-bottom
           partialLines.push(i < visibleCount ? newLines[i] : '');
         } else {
-          // Lines reveal bottom-to-top
           partialLines.push(i >= newLines.length - visibleCount ? newLines[i] : '');
         }
       }
@@ -145,17 +150,11 @@ export async function tui(filePath: string) {
       await sleep(delay);
     }
 
-    // Final render — strip typewriter content if animation will follow
-    const hasTw = !!getTypewriterContent(md);
-    if (hasTw) {
-      // Render without typewriter content, then animate it in
-      render(true);
-    } else {
-      process.stdout.write(buildFrame(newLines));
-    }
+    // Final clean frame (already stripped if typewriter)
+    process.stdout.write(buildFrame(newLines));
     animating = false;
 
-    // Start typewriter if this slide has one
+    // Start typewriter animation if this slide has one
     startTypewriterIfNeeded();
   }
 
