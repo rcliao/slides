@@ -22,6 +22,7 @@ Agent-friendly commands:
   slides info <file>      Show deck structure and stats (--json for machine-readable)
   slides lint <file>      Validate deck quality (--json for machine-readable)
   slides print <file>     Render slides to terminal (non-interactive)
+  slides render <file> <N> Render slide N with fit metadata (JSON)
   slides tui <file>       Interactive terminal presentation (fullscreen)
   slides get <file> <N>   Extract slide N as raw markdown
   slides set <file> <N>   Replace slide N (reads from stdin)
@@ -392,6 +393,29 @@ sent 1.2MB, 24 files
 
 **Deploy successful** — 3 replicas healthy
 
+## Inline formatting
+- \`==text==\` for highlighted text (yellow background in terminal, rendered as \`<mark>\` in browser)
+- \`<mark>text</mark>\` for highlighted text (works in both browser and terminal)
+- \`~~text~~\` for strikethrough text
+- \`**bold**\` for bold, \`*italic*\` for italic
+- Use highlights to draw attention to key terms, metrics, or changes
+
+## {pixels} blocks — pixel art
+Use \`\`\`pixels for terminal-rendered pixel art using Unicode half-block characters.
+Each character maps to a color: \`.=transparent, R=red, G=green, B=blue, Y=yellow, C=cyan, M=magenta, O=orange, K=black, W=white, 0-9=grayscale\`
+Best for small sprites (under 20 rows). Renders in terminal TUI/print modes; shows as raw text in browser.
+
+Example:
+\`\`\`pixels
+....RRRR....
+..RRRRRRRR..
+..RR.RR.RRR.
+..RRRRRRRRRR
+..RRR.RR.RRR
+...RR.RR.RR.
+....RRRRRR..
+\`\`\`
+
 ## Common mistakes to avoid
 - Do NOT use \`document.getElementById\` in {exec} blocks — use the provided \`output\` element instead
 - Do NOT put {exec} code inside {live} blocks or vice versa — they are separate systems
@@ -536,6 +560,18 @@ async function print(file: string, options: { slide?: number; compact?: boolean;
     width: options.width,
   });
   process.stdout.write(output);
+}
+
+async function render(file: string, slideNum: number, options: { width?: number; screenHeight?: number }) {
+  const filePath = path.resolve(file);
+  if (!fs.existsSync(filePath)) {
+    console.error(`Error: File not found: ${filePath}`);
+    process.exit(1);
+  }
+  const { renderSlideForAgent } = await import('./render-text.js');
+  const markdown = fs.readFileSync(filePath, 'utf-8');
+  const result = renderSlideForAgent(markdown, slideNum, options.screenHeight);
+  console.log(JSON.stringify(result, null, 2));
 }
 
 async function getSlide(file: string, slideNum: number) {
@@ -721,6 +757,20 @@ switch (command) {
       compact: getFlag('compact'),
       noColor: getFlag('no-color'),
       width: parseInt(getFlagValue('width', '80')) || 80,
+    });
+    break;
+  }
+  case 'render':
+  case 'r': {
+    const file = restPositional[0];
+    const num = parseInt(restPositional[1]);
+    if (!file || !num) {
+      console.error('Usage: slides render <file> <slide-number> [--width=N] [--height=N]');
+      process.exit(1);
+    }
+    render(file, num, {
+      width: parseInt(getFlagValue('width', '80')) || 80,
+      screenHeight: parseInt(getFlagValue('height', '24')) || 24,
     });
     break;
   }

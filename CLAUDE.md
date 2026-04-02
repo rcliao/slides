@@ -2,9 +2,9 @@
 
 ## Project overview
 
-**slides** is a developer-first CLI presentation framework. Write slides in Markdown, serve with hot reload, present in the browser.
+**slides** is a developer-first CLI presentation framework. Write slides in Markdown, serve with hot reload, present in the browser or terminal. Designed for both human presenters and AI agents.
 
-**Tech stack:** React 19, Vite 7, TypeScript 5.9, marked (Markdown parser), highlight.js (syntax highlighting), mermaid (diagrams), canvas-confetti, WebSocket (live sync).
+**Tech stack:** React 19, Vite 7, TypeScript 5.9, marked (Markdown parser), highlight.js (syntax highlighting), mermaid (diagrams), canvas-confetti, WebSocket (live sync), pngjs (sprite conversion).
 
 ## Common commands
 
@@ -14,6 +14,42 @@ npm run slides -- serve deck.md      # Serve a specific file
 npm run slides -- serve deck.md --live --tunnel  # Live sync + public tunnel
 npx tsc -b                           # Type-check (no emit)
 npm run build                        # Production build (tsc + vite)
+```
+
+## Agent-friendly commands
+
+```bash
+# Inspect (read-only, structured output)
+slides info deck.md                  # Deck structure + stats (human-readable)
+slides info deck.md --json           # Machine-readable JSON
+slides lint deck.md                  # Quality validation (10 rules)
+slides lint deck.md --json           # Machine-readable lint report
+slides render deck.md 3 --json       # Rendered slide with fit metadata
+slides print deck.md                 # Non-interactive render to stdout
+slides print deck.md --slide=3       # Single slide
+slides print deck.md --no-color      # Plain text (pipe-friendly)
+slides print deck.md --compact       # Minimal chrome
+
+# Mutate (slide-level operations)
+slides get deck.md 5                 # Extract slide 5 as raw markdown
+echo "## New" | slides set deck.md 5 # Replace slide 5 from stdin
+echo "## New" | slides insert deck.md 3  # Insert after slide 3
+slides remove deck.md 7              # Delete slide 7
+
+# Present
+slides tui deck.md                   # Interactive terminal presentation (fullscreen)
+slides serve deck.md                 # Browser presentation (existing)
+```
+
+### Agent workflow pattern
+
+```
+1. slides generate "topic"           # or agent writes markdown directly
+2. slides lint deck.md --json        # check quality
+3. [fix issues based on lint output]
+4. slides render deck.md 3 --json    # spot-check specific slides
+5. slides print deck.md              # full visual review
+6. "Ready — run: slides tui deck.md" # hand off to human
 ```
 
 ## Architecture
@@ -34,6 +70,12 @@ npm run build                        # Production build (tsc + vite)
 | `src/vite-plugin-slides.ts` | Custom Vite plugin. Serves parsed slide data as virtual module (`virtual:slides-data`). Watches markdown file for HMR. WebSocket server for live sync. |
 | `src/types.ts` | TypeScript interfaces: `Slide`, `SlidesMeta`, `SlidesData`. |
 | `src/themes/base.css` | Shared base styles. `default.css`, `dark.css`, `retro.css` for themes. |
+| `src/lint.ts` | Extended linter (`lintSlides`), deck info (`getDeckInfo`), slide split/assemble utilities. 10 lint rules. |
+| `src/render-text.ts` | Terminal renderer. Converts markdown to ANSI-formatted text. Block font h1, pixel art, two-column, highlights. |
+| `src/tui.ts` | Interactive full-screen terminal presenter. Alternate screen buffer, keyboard navigation, vertical centering. |
+| `src/block-font.ts` | 5-line-tall block character font for terminal h1 headings. A-Z, 0-9, punctuation. |
+| `src/pixel-art.ts` | Pixel art renderer using Unicode half-block characters (▀▄█) with ANSI colors. |
+| `scripts/sprite-to-pixels.mjs` | PNG sprite to `{pixels}` format converter. Uses pngjs. `node scripts/sprite-to-pixels.mjs sprite.png [--scale=N]` |
 
 ### Key patterns
 
@@ -101,6 +143,33 @@ npm run build                        # Production build (tsc + vite)
 - Auto-advance mode: `a` key toggles; advances slides/steps every 5s, loops at end; pulsing "Auto" badge in top-right; disabled for audience and overview
 - Browser back/forward: `hashchange` listener syncs slide state with browser history (each slide change creates a history entry via `window.location.hash`)
 - Slide markdown validator: `validateSlides()` in parser.ts checks for const/let in {exec} blocks, missing IIFE in {live} scripts, missing `<!-- column -->` in two-column layout; integrated into both `serve` (startup) and `generate` (post-output)
+
+**Terminal rendering (`render-text.ts`):**
+- Block font: `#` headings render as 5-line-tall block characters if they fit within terminal width; falls back to regular bold heading for long titles
+- Pixel art: `` ```pixels `` code blocks render using half-block Unicode chars (▀▄█) with ANSI 256-color; color palette: `.`=transparent, `R`=red, `G`=green, `B`=blue, `Y`=yellow, `C`=cyan, `M`=magenta, `O`=orange, `K`=black, `W`=white, `0-9`=grayscale
+- Two-column: splits at `<!-- column -->`, renders columns side-by-side with `│` separator; heading above columns spans full width; handles both 2-part and 3-part splits
+- Inline formatting: `==text==` and `<mark>text</mark>` render as yellow-bg highlight; `~~text~~` renders as dim red strikethrough; `**bold**`, `*italic*`, `` `code` `` all supported
+- `renderSlideForAgent()` returns JSON with rendered lines, lineCount, fitsScreen, overflow, and words — structured output for agent consumption
+
+**TUI presenter (`tui.ts`):**
+- Full-screen alternate screen buffer (`\x1b[?1049h`)
+- Raw stdin for keyboard: arrows/hjkl navigate, `g`/`G` first/last, `?` help overlay, `q` quit
+- Vertical centering of slide content
+- Title bar with deck name + layout + slide counter
+- `<!-- pause -->` incremental reveal works step-by-step
+- Requires interactive TTY; exits with error message if stdin is not a TTY
+
+**Lint rules (`lint.ts`):**
+- `exec-const` (error): const/let in {exec} blocks prevents state sharing
+- `live-no-iife` (error): {live} scripts without IIFE wrapper
+- `two-column-no-marker` (error): layout: two-column without `<!-- column -->`
+- `density` (warning): slide >150 words, or >100 words without `<!-- pause -->`
+- `missing-title` (warning): first slide has no heading
+- `slide-count` (warning): <4 or >20 slides
+- `empty-slide` (warning): no meaningful content
+- `duplicate-heading` (warning): same heading text on multiple slides
+- `unbalanced-columns` (warning): two-column with >3:1 word ratio
+- `code-too-long` (warning): code block >15 lines (excludes `{pixels}` blocks)
 
 ## Style conventions
 
