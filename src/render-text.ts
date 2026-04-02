@@ -1,6 +1,7 @@
 import { parseSlides } from './parser.js';
 import { renderBlockText, blockTextWidth } from './block-font.js';
 import { renderPixelArt, parsePixelGrid } from './pixel-art.js';
+import { renderBarChart, renderProgress, renderSparkline } from './charts.js';
 // ANSI escape codes
 const RESET = '\x1b[0m';
 const BOLD = '\x1b[1m';
@@ -113,6 +114,7 @@ function renderMarkdownLines(rawMarkdown: string, width: number, nc: boolean): s
   let isPixelBlock = false;
   let isBigTextBlock = false;
   let isTypewriterBlock = false;
+  let isChartBlock = ''; // 'bar-chart', 'progress', 'sparkline', or ''
   let codeBuffer: string[] = [];
   const codeWidth = Math.max(10, width - 4);
 
@@ -138,7 +140,11 @@ function renderMarkdownLines(rawMarkdown: string, width: number, nc: boolean): s
         isPixelBlock = /\{\s*pixels\s*\}/i.test(fullAnnotation) || codeLang.toLowerCase() === 'pixels';
         isBigTextBlock = /\{\s*bigtext\s*\}/i.test(fullAnnotation) || codeLang.toLowerCase() === 'bigtext';
         isTypewriterBlock = /\{\s*typewriter\s*\}/i.test(fullAnnotation) || codeLang.toLowerCase() === 'typewriter';
-        if (!isPixelBlock && !isBigTextBlock && !isTypewriterBlock) {
+        const lcLang = codeLang.toLowerCase();
+        if (lcLang === 'bar-chart' || lcLang === 'barchart') isChartBlock = 'bar-chart';
+        else if (lcLang === 'progress') isChartBlock = 'progress';
+        else if (lcLang === 'sparkline') isChartBlock = 'sparkline';
+        if (!isPixelBlock && !isBigTextBlock && !isTypewriterBlock && !isChartBlock) {
           const label = codeLang ? ` ${codeLang} ` : '';
           lines.push(c(DIM, `  ┌${'─'.repeat(codeWidth)}┐`, nc));
           if (label) {
@@ -151,6 +157,15 @@ function renderMarkdownLines(rawMarkdown: string, width: number, nc: boolean): s
           const grid = parsePixelGrid(codeBuffer.join('\n'));
           const pixelLines = renderPixelArt(grid, nc);
           lines.push(...pixelLines);
+        } else if (isChartBlock) {
+          const chartContent = codeBuffer.join('\n');
+          if (isChartBlock === 'bar-chart') {
+            lines.push(...renderBarChart(chartContent, width, nc));
+          } else if (isChartBlock === 'progress') {
+            lines.push(...renderProgress(chartContent, width, nc));
+          } else if (isChartBlock === 'sparkline') {
+            lines.push(...renderSparkline(chartContent, nc));
+          }
         } else if (isTypewriterBlock) {
           // In print mode, show as static green terminal text
           for (const bufLine of codeBuffer) {
@@ -184,13 +199,14 @@ function renderMarkdownLines(rawMarkdown: string, width: number, nc: boolean): s
         isPixelBlock = false;
         isBigTextBlock = false;
         isTypewriterBlock = false;
+        isChartBlock = '';
         codeBuffer = [];
       }
       continue;
     }
 
     if (inCodeBlock) {
-      if (isPixelBlock || isBigTextBlock || isTypewriterBlock) {
+      if (isPixelBlock || isBigTextBlock || isTypewriterBlock || isChartBlock) {
         codeBuffer.push(line);
       } else {
         lines.push(`  ${c(DIM, '│', nc)} ${c(GREEN, line, nc)}`);

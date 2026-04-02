@@ -28,6 +28,7 @@
     "src/render-text.ts",
     "src/tui.ts",
     "src/block-font.ts",
-    "src/pixel-art.ts"
+    "src/pixel-art.ts",
+    "src/charts.ts"
   ]
 }

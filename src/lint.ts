@@ -232,6 +232,7 @@ export function lintSlides(markdown: string, file?: string): LintReport {
       if (/\{\s*pixels\s*\}/i.test(firstLine) || /^```\s*pixels\s*$/i.test(firstLine)) continue;
       if (/\{\s*bigtext\s*\}/i.test(firstLine) || /^```\s*bigtext\s*$/i.test(firstLine)) continue;
       if (/\{\s*typewriter\s*\}/i.test(firstLine) || /^```\s*typewriter\s*$/i.test(firstLine)) continue;
+      if (/^```\s*(?:bar-chart|barchart|progress|sparkline)\s*$/i.test(firstLine)) continue;
       const codeLines = codeMatch[0].split('\n').length - 2; // minus opening/closing fences
       if (codeLines > 15) {
         results.push({
