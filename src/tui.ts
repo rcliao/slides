@@ -82,19 +82,20 @@ export async function tui(filePath: string) {
     return output;
   }
 
-  function render() {
-    const { cols } = getTermSize();
+  /** Get the markdown for the current slide/step, respecting incremental reveal. */
+  function getCurrentMarkdown(): string {
     const slide = parsed.slides[currentSlide];
-    const width = Math.min(cols, 120);
-
-    let md: string;
     if (slide.steps && slide.steps.length > 1) {
       const segments = slide.rawMarkdown.split(/\s*<!--\s*pause\s*-->\s*/i);
-      md = segments.slice(0, currentStep + 1).join('\n\n');
-    } else {
-      md = slide.rawMarkdown;
+      return segments.slice(0, currentStep + 1).join('\n\n');
     }
+    return slide.rawMarkdown;
+  }
 
+  function render() {
+    const { cols } = getTermSize();
+    const width = Math.min(cols, 120);
+    const md = getCurrentMarkdown();
     const renderedLines = renderSlideToText(md, { width });
     process.stdout.write(buildFrame(renderedLines));
   }
@@ -109,9 +110,8 @@ export async function tui(filePath: string) {
     const { cols } = getTermSize();
     const width = Math.min(cols, 120);
 
-    // Render the new slide's content
-    const slide = parsed.slides[currentSlide];
-    const md = slide.rawMarkdown;
+    // Render the new slide's content (respecting incremental reveal steps)
+    const md = getCurrentMarkdown();
     const newLines = renderSlideToText(md, { width });
 
     const steps = 4;
@@ -148,11 +148,12 @@ export async function tui(filePath: string) {
    * Typewriter animation: types out content character by character.
    */
   function startTypewriterIfNeeded() {
-    const slide = parsed.slides[currentSlide];
-    const twContent = getTypewriterContent(slide.rawMarkdown);
+    const md = getCurrentMarkdown();
+    const twContent = getTypewriterContent(md);
     if (!twContent) return;
 
-    const twLines = twContent; // capture for closure
+    const twLines = twContent;
+    const currentMd = md; // capture for closure
     const { cols } = getTermSize();
     const width = Math.min(cols, 120);
 
@@ -177,7 +178,7 @@ export async function tui(filePath: string) {
 
       // Reconstruct the slide markdown with partial typewriter content
       const partialTw = partialLines.join('\n');
-      const fullMd = slide.rawMarkdown
+      const fullMd = currentMd
         .replace(/```(?:\S*\s*)?\{\s*typewriter\s*\}.*\n[\s\S]*?```/i, partialTw)
         .replace(/```typewriter\s*\n[\s\S]*?```/i, partialTw);
 
