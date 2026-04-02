@@ -20,6 +20,20 @@ export interface LintReport {
     hasDiagrams: boolean;
     layoutDistribution: Record<string, number>;
     estimatedMinutes: number;
+    // Pacing & rhythm
+    consecutiveSameLayout: number;       // longest streak of same layout in a row
+    visualSlideRatio: number;            // fraction of slides with code/diagrams/pixels/bigtext (0-1)
+    pauseCount: number;                  // total <!-- pause --> markers in deck
+    avgStepsPerSlide: number;            // average steps per slide (1 = no pauses)
+    // Content balance
+    wordDistribution: number[];          // words per slide, ordered by slide
+    maxWords: number;
+    minWords: number;
+    medianWords: number;
+    heaviestSlide: { slide: number; words: number };
+    lightestSlide: { slide: number; words: number };
+    // Features used
+    featuresUsed: string[];              // which special features appear in the deck
   };
 }
 
@@ -273,12 +287,70 @@ export function lintSlides(markdown: string, file?: string): LintReport {
   const layoutDist: Record<string, number> = {};
   let hasCode = false;
   let hasDiags = false;
-  for (const s of rawSlides) {
-    const layout = s.frontmatter.layout || parsed.slides[rawSlides.indexOf(s)]?.frontmatter?.layout || 'default';
+  const wordDist: number[] = [];
+  let totalPauses = 0;
+  let totalSteps = 0;
+  let visualSlides = 0;
+  const featuresSet = new Set<string>();
+  const layouts: string[] = [];
+
+  for (let i = 0; i < rawSlides.length; i++) {
+    const s = rawSlides[i];
+    const chunk = s.rawChunk;
+    const layout = s.frontmatter.layout || parsed.slides[i]?.frontmatter?.layout || 'default';
     layoutDist[layout] = (layoutDist[layout] || 0) + 1;
-    if (hasCodeBlock(s.rawChunk)) hasCode = true;
-    if (hasMermaid(s.rawChunk)) hasDiags = true;
+    layouts.push(layout);
+
+    const w = countWords(chunk);
+    wordDist.push(w);
+
+    // Count pauses in this slide
+    const pauseMatches = chunk.match(/<!--\s*pause\s*-->/gi);
+    const slidePauses = pauseMatches ? pauseMatches.length : 0;
+    totalPauses += slidePauses;
+    totalSteps += slidePauses + 1;
+
+    // Track features
+    const isVisual = hasCodeBlock(chunk) || hasMermaid(chunk)
+      || /```\s*(?:pixels|\S*\s*\{\s*pixels\s*\})/i.test(chunk)
+      || /```\s*(?:bigtext|\S*\s*\{\s*bigtext\s*\})/i.test(chunk);
+    if (isVisual) visualSlides++;
+
+    if (hasCodeBlock(chunk)) { hasCode = true; featuresSet.add('code'); }
+    if (hasMermaid(chunk)) { hasDiags = true; featuresSet.add('mermaid'); }
+    if (hasExecBlock(chunk)) featuresSet.add('exec');
+    if (hasLiveBlock(chunk)) featuresSet.add('live');
+    if (/```\s*(?:pixels|\S*\s*\{\s*pixels\s*\})/i.test(chunk)) featuresSet.add('pixels');
+    if (/```\s*(?:bigtext|\S*\s*\{\s*bigtext\s*\})/i.test(chunk)) featuresSet.add('bigtext');
+    if (/```\s*(?:typewriter|\S*\s*\{\s*typewriter\s*\})/i.test(chunk)) featuresSet.add('typewriter');
+    if (/<!--\s*column\s*-->/i.test(chunk)) featuresSet.add('two-column');
+    if (layout === 'terminal') featuresSet.add('terminal');
+    if (/==.+?==/i.test(chunk) || /<mark>/i.test(chunk)) featuresSet.add('highlight');
+    if (/~~.+?~~/i.test(chunk)) featuresSet.add('strikethrough');
+    if (slidePauses > 0) featuresSet.add('pause');
   }
+
+  // Consecutive same layout
+  let maxConsecutive = 1;
+  let currentRun = 1;
+  for (let i = 1; i < layouts.length; i++) {
+    if (layouts[i] === layouts[i - 1]) {
+      currentRun++;
+      maxConsecutive = Math.max(maxConsecutive, currentRun);
+    } else {
+      currentRun = 1;
+    }
+  }
+
+  // Word distribution stats
+  const sortedWords = [...wordDist].sort((a, b) => a - b);
+  const medianWords = sortedWords.length > 0
+    ? sortedWords[Math.floor(sortedWords.length / 2)]
+    : 0;
+  const maxWordsVal = wordDist.length > 0 ? Math.max(...wordDist) : 0;
+  const minWordsVal = wordDist.length > 0 ? Math.min(...wordDist) : 0;
+  const heaviestIdx = wordDist.indexOf(maxWordsVal);
+  const lightestIdx = wordDist.indexOf(minWordsVal);
 
   const errors = results.filter((r) => r.severity === 'error');
   const warnings = results.filter((r) => r.severity === 'warning');
@@ -295,6 +367,20 @@ export function lintSlides(markdown: string, file?: string): LintReport {
       hasDiagrams: hasDiags,
       layoutDistribution: layoutDist,
       estimatedMinutes: Math.max(1, Math.round(rawSlides.length * 1.5)),
+      // Pacing & rhythm
+      consecutiveSameLayout: maxConsecutive,
+      visualSlideRatio: rawSlides.length > 0 ? Math.round((visualSlides / rawSlides.length) * 100) / 100 : 0,
+      pauseCount: totalPauses,
+      avgStepsPerSlide: rawSlides.length > 0 ? Math.round((totalSteps / rawSlides.length) * 10) / 10 : 1,
+      // Content balance
+      wordDistribution: wordDist,
+      maxWords: maxWordsVal,
+      minWords: minWordsVal,
+      medianWords,
+      heaviestSlide: { slide: heaviestIdx + 1, words: maxWordsVal },
+      lightestSlide: { slide: lightestIdx + 1, words: minWordsVal },
+      // Features
+      featuresUsed: [...featuresSet].sort(),
     },
   };
 }
