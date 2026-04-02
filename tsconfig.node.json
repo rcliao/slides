@@ -23,6 +23,11 @@
     "src/cli.ts",
     "src/vite-plugin-slides.ts",
     "src/parser.ts",
-    "src/types.ts"
+    "src/types.ts",
+    "src/lint.ts",
+    "src/render-text.ts",
+    "src/tui.ts",
+    "src/block-font.ts",
+    "src/pixel-art.ts"
   ]
 }

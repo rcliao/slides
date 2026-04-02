@@ -18,10 +18,25 @@ Usage:
   slides generate [topic] Generate a presentation with AI (requires ANTHROPIC_API_KEY)
   slides help             Show this help message
 
+Agent-friendly commands:
+  slides info <file>      Show deck structure and stats (--json for machine-readable)
+  slides lint <file>      Validate deck quality (--json for machine-readable)
+  slides print <file>     Render slides to terminal (non-interactive)
+  slides tui <file>       Interactive terminal presentation (fullscreen)
+  slides get <file> <N>   Extract slide N as raw markdown
+  slides set <file> <N>   Replace slide N (reads from stdin)
+  slides insert <file> <N> Insert slide after position N (reads from stdin)
+  slides remove <file> <N> Remove slide N
+
 Options:
   --live                  Enable live sync (audience can follow along)
   --tunnel                Start a Cloudflare tunnel for public access (requires cloudflared)
   --output=file.md        Output file for generate command (default: generated.md)
+  --json                  Machine-readable JSON output (info, lint)
+  --slide=N               Render only slide N (print)
+  --compact               Minimal chrome (print)
+  --no-color              Plain text without ANSI codes (print)
+  --width=N               Terminal width for rendering (print, default: 80)
 
 Examples:
   slides serve deck.md
@@ -29,6 +44,13 @@ Examples:
   slides new my-talk.md
   slides build deck.md
   slides generate "Introduction to Rust"
+
+  # Agent workflow
+  slides lint deck.md --json
+  slides info deck.md --json
+  slides print deck.md --slide=3
+  slides get deck.md 5
+  echo "## New Slide\\n\\nContent here" | slides set deck.md 5
 
 Keyboard shortcuts (in presentation):
   Right / Space / l / j   Next slide / step
@@ -428,6 +450,194 @@ sent 1.2MB, 24 files
   console.log(`  slides serve ${outputFile}\n`);
 }
 
+// --- Agent-friendly commands ---
+
+async function info(file: string, json: boolean) {
+  const filePath = path.resolve(file);
+  if (!fs.existsSync(filePath)) {
+    console.error(`Error: File not found: ${filePath}`);
+    process.exit(1);
+  }
+  const { getDeckInfo } = await import('./lint.js');
+  const markdown = fs.readFileSync(filePath, 'utf-8');
+  const deckInfo = getDeckInfo(markdown);
+
+  if (json) {
+    console.log(JSON.stringify(deckInfo, null, 2));
+  } else {
+    console.log(`\n  ${deckInfo.title}`);
+    console.log(`  Theme: ${deckInfo.theme} | Slides: ${deckInfo.slideCount}\n`);
+    for (const s of deckInfo.slides) {
+      const features = [
+        s.hasCode && 'code',
+        s.hasExec && 'exec',
+        s.hasLive && 'live',
+        s.hasMermaid && 'mermaid',
+        s.hasNotes && 'notes',
+      ].filter(Boolean);
+      const featureStr = features.length > 0 ? ` [${features.join(', ')}]` : '';
+      const heading = s.heading || '(no heading)';
+      console.log(`  ${String(s.index).padStart(2)}. ${heading.padEnd(40)} ${s.layout.padEnd(12)} ${String(s.words).padStart(3)}w ${String(s.steps).padStart(1)}s${featureStr}`);
+    }
+    console.log();
+  }
+}
+
+async function lint(file: string, json: boolean) {
+  const filePath = path.resolve(file);
+  if (!fs.existsSync(filePath)) {
+    console.error(`Error: File not found: ${filePath}`);
+    process.exit(1);
+  }
+  const { lintSlides } = await import('./lint.js');
+  const markdown = fs.readFileSync(filePath, 'utf-8');
+  const report = lintSlides(markdown, file);
+
+  if (json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    if (report.errors.length === 0 && report.warnings.length === 0) {
+      console.log(`\n  ✓ ${file}: ${report.slides} slides, no issues\n`);
+    } else {
+      console.log(`\n  ${file}: ${report.slides} slides\n`);
+      for (const e of report.errors) {
+        const prefix = e.slide > 0 ? `Slide ${e.slide}` : 'Deck';
+        console.log(`  ✗ ${prefix}: ${e.message}`);
+      }
+      for (const w of report.warnings) {
+        const prefix = w.slide > 0 ? `Slide ${w.slide}` : 'Deck';
+        console.log(`  ⚠ ${prefix}: ${w.message}`);
+      }
+      console.log();
+    }
+    // Always show stats
+    console.log(`  Stats: ~${report.stats.avgWordsPerSlide} words/slide, ~${report.stats.estimatedMinutes} min`);
+    console.log(`  Layouts: ${Object.entries(report.stats.layoutDistribution).map(([k, v]) => `${k}(${v})`).join(', ')}`);
+    if (report.stats.hasCodeSlides) console.log('  Has code slides');
+    if (report.stats.hasDiagrams) console.log('  Has diagrams');
+    console.log();
+  }
+
+  if (!report.valid) process.exit(1);
+}
+
+async function print(file: string, options: { slide?: number; compact?: boolean; noColor?: boolean; width?: number }) {
+  const filePath = path.resolve(file);
+  if (!fs.existsSync(filePath)) {
+    console.error(`Error: File not found: ${filePath}`);
+    process.exit(1);
+  }
+  const { renderDeck } = await import('./render-text.js');
+  const markdown = fs.readFileSync(filePath, 'utf-8');
+  const output = renderDeck(markdown, {
+    slideNum: options.slide,
+    compact: options.compact,
+    noColor: options.noColor,
+    width: options.width,
+  });
+  process.stdout.write(output);
+}
+
+async function getSlide(file: string, slideNum: number) {
+  const filePath = path.resolve(file);
+  if (!fs.existsSync(filePath)) {
+    console.error(`Error: File not found: ${filePath}`);
+    process.exit(1);
+  }
+  const { splitMarkdownSlides } = await import('./lint.js');
+  const markdown = fs.readFileSync(filePath, 'utf-8');
+  const { slides } = splitMarkdownSlides(markdown);
+
+  if (slideNum < 1 || slideNum > slides.length) {
+    console.error(`Error: Slide ${slideNum} not found (deck has ${slides.length} slides)`);
+    process.exit(1);
+  }
+
+  const slide = slides[slideNum - 1];
+  if (slide.frontmatterChunk) {
+    console.log(`---\n${slide.frontmatterChunk}\n---\n`);
+  }
+  console.log(slide.contentChunk);
+}
+
+async function setSlide(file: string, slideNum: number) {
+  const filePath = path.resolve(file);
+  if (!fs.existsSync(filePath)) {
+    console.error(`Error: File not found: ${filePath}`);
+    process.exit(1);
+  }
+  const { splitMarkdownSlides, assembleMarkdown } = await import('./lint.js');
+  const markdown = fs.readFileSync(filePath, 'utf-8');
+  const { globalFrontmatter, slides } = splitMarkdownSlides(markdown);
+
+  if (slideNum < 1 || slideNum > slides.length) {
+    console.error(`Error: Slide ${slideNum} not found (deck has ${slides.length} slides)`);
+    process.exit(1);
+  }
+
+  // Read new content from stdin
+  const input = fs.readFileSync(0, 'utf-8').trim();
+
+  // Check if input has frontmatter
+  const fmMatch = input.match(/^---\n([\s\S]*?)\n---\n\n?([\s\S]*)$/);
+  if (fmMatch) {
+    slides[slideNum - 1] = { frontmatterChunk: fmMatch[1].trim(), contentChunk: fmMatch[2].trim() };
+  } else {
+    slides[slideNum - 1] = { frontmatterChunk: null, contentChunk: input };
+  }
+
+  fs.writeFileSync(filePath, assembleMarkdown(globalFrontmatter, slides));
+  console.log(`Updated slide ${slideNum} in ${file}`);
+}
+
+async function insertSlide(file: string, afterNum: number) {
+  const filePath = path.resolve(file);
+  if (!fs.existsSync(filePath)) {
+    console.error(`Error: File not found: ${filePath}`);
+    process.exit(1);
+  }
+  const { splitMarkdownSlides, assembleMarkdown } = await import('./lint.js');
+  const markdown = fs.readFileSync(filePath, 'utf-8');
+  const { globalFrontmatter, slides } = splitMarkdownSlides(markdown);
+
+  if (afterNum < 0 || afterNum > slides.length) {
+    console.error(`Error: Position ${afterNum} is out of range (deck has ${slides.length} slides)`);
+    process.exit(1);
+  }
+
+  const input = fs.readFileSync(0, 'utf-8').trim();
+
+  const fmMatch = input.match(/^---\n([\s\S]*?)\n---\n\n?([\s\S]*)$/);
+  const newSlide = fmMatch
+    ? { frontmatterChunk: fmMatch[1].trim(), contentChunk: fmMatch[2].trim() }
+    : { frontmatterChunk: null, contentChunk: input };
+
+  slides.splice(afterNum, 0, newSlide);
+
+  fs.writeFileSync(filePath, assembleMarkdown(globalFrontmatter, slides));
+  console.log(`Inserted slide at position ${afterNum + 1} in ${file} (${slides.length} total)`);
+}
+
+async function removeSlide(file: string, slideNum: number) {
+  const filePath = path.resolve(file);
+  if (!fs.existsSync(filePath)) {
+    console.error(`Error: File not found: ${filePath}`);
+    process.exit(1);
+  }
+  const { splitMarkdownSlides, assembleMarkdown } = await import('./lint.js');
+  const markdown = fs.readFileSync(filePath, 'utf-8');
+  const { globalFrontmatter, slides } = splitMarkdownSlides(markdown);
+
+  if (slideNum < 1 || slideNum > slides.length) {
+    console.error(`Error: Slide ${slideNum} not found (deck has ${slides.length} slides)`);
+    process.exit(1);
+  }
+
+  slides.splice(slideNum - 1, 1);
+  fs.writeFileSync(filePath, assembleMarkdown(globalFrontmatter, slides));
+  console.log(`Removed slide ${slideNum} from ${file} (${slides.length} remaining)`);
+}
+
 // --- Main ---
 
 const allArgs = process.argv.slice(2);
@@ -476,6 +686,98 @@ switch (command) {
       process.exit(1);
     }
     generate(topic, output);
+    break;
+  }
+  case 'info':
+  case 'i': {
+    const file = restPositional[0];
+    if (!file) {
+      console.error('Usage: slides info <file> [--json]');
+      process.exit(1);
+    }
+    info(file, getFlag('json'));
+    break;
+  }
+  case 'lint':
+  case 'l': {
+    const file = restPositional[0];
+    if (!file) {
+      console.error('Usage: slides lint <file> [--json]');
+      process.exit(1);
+    }
+    lint(file, getFlag('json'));
+    break;
+  }
+  case 'print':
+  case 'p': {
+    const file = restPositional[0];
+    if (!file) {
+      console.error('Usage: slides print <file> [--slide=N] [--compact] [--no-color] [--width=N]');
+      process.exit(1);
+    }
+    const slideVal = getFlagValue('slide', '0');
+    print(file, {
+      slide: parseInt(slideVal) || undefined,
+      compact: getFlag('compact'),
+      noColor: getFlag('no-color'),
+      width: parseInt(getFlagValue('width', '80')) || 80,
+    });
+    break;
+  }
+  case 'tui':
+  case 't': {
+    const file = restPositional[0];
+    if (!file) {
+      console.error('Usage: slides tui <file>');
+      process.exit(1);
+    }
+    const filePath = path.resolve(file);
+    if (!fs.existsSync(filePath)) {
+      console.error(`Error: File not found: ${filePath}`);
+      process.exit(1);
+    }
+    import('./tui.js').then(({ tui: runTui }) => runTui(filePath));
+    break;
+  }
+  case 'get': {
+    const file = restPositional[0];
+    const num = parseInt(restPositional[1]);
+    if (!file || !num) {
+      console.error('Usage: slides get <file> <slide-number>');
+      process.exit(1);
+    }
+    getSlide(file, num);
+    break;
+  }
+  case 'set': {
+    const file = restPositional[0];
+    const num = parseInt(restPositional[1]);
+    if (!file || !num) {
+      console.error('Usage: slides set <file> <slide-number> (reads from stdin)');
+      process.exit(1);
+    }
+    setSlide(file, num);
+    break;
+  }
+  case 'insert': {
+    const file = restPositional[0];
+    const num = parseInt(restPositional[1]);
+    if (!file || isNaN(num)) {
+      console.error('Usage: slides insert <file> <after-position> (reads from stdin)');
+      process.exit(1);
+    }
+    insertSlide(file, num);
+    break;
+  }
+  case 'remove':
+  case 'rm': {
+    const file = restPositional[0];
+    const num = parseInt(restPositional[1]);
+    if (!file || !num) {
+      console.error('Usage: slides remove <file> <slide-number>');
+      process.exit(1);
+    }
+    removeSlide(file, num);
     break;
   }
   case 'help':
