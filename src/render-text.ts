@@ -111,6 +111,7 @@ function renderMarkdownLines(rawMarkdown: string, width: number, nc: boolean): s
   let inCodeBlock = false;
   let codeLang = '';
   let isPixelBlock = false;
+  let isBigTextBlock = false;
   let codeBuffer: string[] = [];
   const codeWidth = Math.max(10, width - 4);
 
@@ -134,7 +135,8 @@ function renderMarkdownLines(rawMarkdown: string, width: number, nc: boolean): s
         const fullAnnotation = trimmed.replace(/```\s*/, '');
         codeLang = fullAnnotation.replace(/\s*\{.*\}/, '').trim();
         isPixelBlock = /\{\s*pixels\s*\}/i.test(fullAnnotation) || codeLang.toLowerCase() === 'pixels';
-        if (!isPixelBlock) {
+        isBigTextBlock = /\{\s*bigtext\s*\}/i.test(fullAnnotation) || codeLang.toLowerCase() === 'bigtext';
+        if (!isPixelBlock && !isBigTextBlock) {
           const label = codeLang ? ` ${codeLang} ` : '';
           lines.push(c(DIM, `  ┌${'─'.repeat(codeWidth)}┐`, nc));
           if (label) {
@@ -144,23 +146,42 @@ function renderMarkdownLines(rawMarkdown: string, width: number, nc: boolean): s
         }
       } else {
         if (isPixelBlock) {
-          // Render pixel art from buffered content
           const grid = parsePixelGrid(codeBuffer.join('\n'));
           const pixelLines = renderPixelArt(grid, nc);
           lines.push(...pixelLines);
+        } else if (isBigTextBlock) {
+          // Render each line as block font
+          const text = codeBuffer.join('\n').trim();
+          for (const textLine of text.split('\n')) {
+            const trimmedLine = textLine.trim();
+            if (!trimmedLine) { lines.push(''); continue; }
+            const bw = blockTextWidth(trimmedLine);
+            if (bw > 0 && bw <= width - 4) {
+              const blockLines = renderBlockText(trimmedLine);
+              lines.push('');
+              for (const bl of blockLines) {
+                lines.push(c(BOLD + CYAN, `  ${bl}`, nc));
+              }
+              lines.push('');
+            } else {
+              // Fallback for text too wide
+              lines.push(c(BOLD + CYAN, `  ${trimmedLine}`, nc));
+            }
+          }
         } else {
           lines.push(c(DIM, `  └${'─'.repeat(codeWidth)}┘`, nc));
         }
         inCodeBlock = false;
         codeLang = '';
         isPixelBlock = false;
+        isBigTextBlock = false;
         codeBuffer = [];
       }
       continue;
     }
 
     if (inCodeBlock) {
-      if (isPixelBlock) {
+      if (isPixelBlock || isBigTextBlock) {
         codeBuffer.push(line);
       } else {
         lines.push(`  ${c(DIM, '│', nc)} ${c(GREEN, line, nc)}`);

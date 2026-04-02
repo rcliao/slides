@@ -970,6 +970,40 @@ pre:hover .code-copy-btn {
   white-space: pre-wrap;
 }
 
+/* === Big Text === */
+
+.bigtext-block {
+  margin: 1.5rem 0;
+  text-align: center;
+}
+
+.bigtext-line {
+  font-size: 4rem;
+  font-weight: 900;
+  line-height: 1.1;
+  color: var(--slide-accent);
+  font-family: system-ui, -apple-system, sans-serif;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* === Pixel Art === */
+
+.pixels-block {
+  margin: 1.5rem auto;
+  text-align: center;
+}
+
+.pixels-art {
+  font-family: 'Fira Code', 'Courier New', monospace;
+  font-size: 0.5rem;
+  line-height: 0.6rem;
+  letter-spacing: 0.1em;
+  color: var(--slide-text);
+  display: inline-block;
+  text-align: left;
+}
+
 /* === Mermaid Diagrams === */
 
 .mermaid {

@@ -58,6 +58,23 @@ const marked = new Marked({
         return `<div class="live-block" data-code="${encoded}"></div>`;
       }
 
+      // {bigtext} — large display text (and bare "bigtext" lang)
+      const bigTextMatch = raw.match(/^(\S*)\s*\{\s*bigtext\s*\}\s*$/i);
+      if (bigTextMatch || raw.trim().toLowerCase() === 'bigtext') {
+        const htmlLines = text.split('\n').map(line => {
+          const trimmed = line.trim();
+          if (!trimmed) return '';
+          return `<div class="bigtext-line">${escapeHtml(trimmed)}</div>`;
+        }).join('');
+        return `<div class="bigtext-block">${htmlLines}</div>`;
+      }
+
+      // {pixels} — pixel art (terminal only, show placeholder in browser)
+      const pixelsMatch = raw.match(/^(\S*)\s*\{\s*pixels\s*\}\s*$/i);
+      if (pixelsMatch || raw.trim().toLowerCase() === 'pixels') {
+        return `<div class="pixels-block"><pre class="pixels-art">${escapeHtml(text)}</pre></div>`;
+      }
+
       // Parse line highlight spec: ```python {2,4-6}
       const specMatch = raw.match(/^(\S*)\s*\{(.+?)\}\s*$/);
       if (specMatch) {
