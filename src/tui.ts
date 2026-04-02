@@ -92,10 +92,19 @@ export async function tui(filePath: string) {
     return slide.rawMarkdown;
   }
 
-  function render() {
+  function render(stripTypewriter = false) {
     const { cols } = getTermSize();
     const width = Math.min(cols, 120);
-    const md = getCurrentMarkdown();
+    let md = getCurrentMarkdown();
+
+    // If this slide has a typewriter block and we're about to animate,
+    // render with empty typewriter content to avoid a flash of full text
+    if (stripTypewriter && getTypewriterContent(md)) {
+      md = md
+        .replace(/```(?:\S*\s*)?\{\s*typewriter\s*\}.*\n[\s\S]*?```/i, '')
+        .replace(/```typewriter\s*\n[\s\S]*?```/i, '');
+    }
+
     const renderedLines = renderSlideToText(md, { width });
     process.stdout.write(buildFrame(renderedLines));
   }
@@ -136,8 +145,14 @@ export async function tui(filePath: string) {
       await sleep(delay);
     }
 
-    // Final clean render
-    process.stdout.write(buildFrame(newLines));
+    // Final render — strip typewriter content if animation will follow
+    const hasTw = !!getTypewriterContent(md);
+    if (hasTw) {
+      // Render without typewriter content, then animate it in
+      render(true);
+    } else {
+      process.stdout.write(buildFrame(newLines));
+    }
     animating = false;
 
     // Start typewriter if this slide has one
@@ -240,7 +255,7 @@ export async function tui(filePath: string) {
     stopTypewriter();
     currentSlide = 0;
     currentStep = 0;
-    render();
+    render(true);
     startTypewriterIfNeeded();
   }
 
@@ -248,7 +263,7 @@ export async function tui(filePath: string) {
     stopTypewriter();
     currentSlide = totalSlides - 1;
     currentStep = 0;
-    render();
+    render(true);
     startTypewriterIfNeeded();
   }
 
@@ -310,8 +325,8 @@ export async function tui(filePath: string) {
     else render();
   });
 
-  // Initial render + typewriter
-  render();
+  // Initial render + typewriter (strip typewriter content to avoid flash)
+  render(true);
   startTypewriterIfNeeded();
 
   // Key handling
@@ -325,7 +340,7 @@ export async function tui(filePath: string) {
 
     if (showHelp) {
       showHelp = false;
-      render();
+      render(true);
       startTypewriterIfNeeded();
       return;
     }

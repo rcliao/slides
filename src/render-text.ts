@@ -238,8 +238,8 @@ function renderMarkdownLines(rawMarkdown: string, width: number, nc: boolean): s
 
     // Blockquotes
     if (trimmed.startsWith('> ')) {
-      const text = trimmed.slice(2);
-      lines.push(c(ITALIC + MAGENTA, `  │ ${text}`, nc));
+      const text = formatInline(trimmed.slice(2), nc);
+      lines.push(`${c(ITALIC + MAGENTA, '  │ ', nc)}${text}`);
       continue;
     }
 
