@@ -558,6 +558,7 @@ async function print(file: string, options: { slide?: number; compact?: boolean;
     compact: options.compact,
     noColor: options.noColor,
     width: options.width,
+    autoExec: true,
   });
   process.stdout.write(output);
 }

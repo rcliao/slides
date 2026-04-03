@@ -58,6 +58,13 @@ const marked = new Marked({
         return `<div class="live-block" data-code="${encoded}"></div>`;
       }
 
+      // {run} — execute JS and show only output (code hidden)
+      const runMatch = raw.match(/^(\S*)\s*\{\s*run\s*\}\s*$/i);
+      if (runMatch || raw.trim().toLowerCase() === 'run') {
+        const encoded = Buffer.from(text, 'utf-8').toString('base64');
+        return `<div class="exec-block run-block" data-code="${encoded}"><div class="exec-output"></div></div>`;
+      }
+
       // {bigtext} — large display text (and bare "bigtext" lang)
       const bigTextMatch = raw.match(/^(\S*)\s*\{\s*bigtext\s*\}\s*$/i);
       if (bigTextMatch || raw.trim().toLowerCase() === 'bigtext') {

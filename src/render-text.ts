@@ -2,6 +2,33 @@ import { parseSlides } from './parser.js';
 import { renderBlockText, blockTextWidth } from './block-font.js';
 import { renderPixelArt, parsePixelGrid } from './pixel-art.js';
 import { renderBarChart, renderProgress, renderSparkline } from './charts.js';
+
+/**
+ * Execute JavaScript code and capture console.log output.
+ * Returns the captured output as a string.
+ */
+export function executeCode(code: string, sharedScope: Record<string, unknown> = {}): string {
+  const logs: string[] = [];
+  const fakeConsole = {
+    log: (...args: unknown[]) => logs.push(args.map(String).join(' ')),
+    error: (...args: unknown[]) => logs.push('ERROR: ' + args.map(String).join(' ')),
+    warn: (...args: unknown[]) => logs.push('WARN: ' + args.map(String).join(' ')),
+  };
+
+  try {
+    // Create a function with console override and shared scope
+    const fn = new Function('console', ...Object.keys(sharedScope), code);
+    const result = fn(fakeConsole, ...Object.values(sharedScope));
+    // Capture return value if no logs
+    if (logs.length === 0 && result !== undefined) {
+      logs.push(String(result));
+    }
+  } catch (err) {
+    logs.push(`Error: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  return logs.join('\n');
+}
 // ANSI escape codes
 const RESET = '\x1b[0m';
 const BOLD = '\x1b[1m';
@@ -21,6 +48,9 @@ export interface RenderOptions {
   width?: number;
   noColor?: boolean;
   compact?: boolean;
+  execOutputs?: Map<number, string>; // block index → captured output
+  showExecHint?: boolean;            // show "press e to run" hint
+  autoExec?: boolean;                // execute {exec}/{run} blocks and capture output
 }
 
 function c(code: string, text: string, noColor: boolean): string {
@@ -86,7 +116,7 @@ export function renderSlideToText(rawMarkdown: string, options: RenderOptions = 
     }
   }
 
-  return renderMarkdownLines(rawMarkdown, width, nc);
+  return renderMarkdownLines(rawMarkdown, width, nc, options);
 }
 
 /**
@@ -105,7 +135,7 @@ function stripAnsi(str: string): string {
 /**
  * Core markdown-to-terminal-lines renderer.
  */
-function renderMarkdownLines(rawMarkdown: string, width: number, nc: boolean): string[] {
+function renderMarkdownLines(rawMarkdown: string, width: number, nc: boolean, opts: RenderOptions = {}): string[] {
   const lines: string[] = [];
   const mdLines = rawMarkdown.split('\n');
 
@@ -115,6 +145,13 @@ function renderMarkdownLines(rawMarkdown: string, width: number, nc: boolean): s
   let isBigTextBlock = false;
   let isTypewriterBlock = false;
   let isChartBlock = ''; // 'bar-chart', 'progress', 'sparkline', or ''
+  let isExecBlock = false;
+  let isRunBlock = false;
+  let execBlockIndex = 0;
+  const execOutputs = opts.execOutputs || new Map<number, string>();
+  const autoExec = opts.autoExec || false;
+  const showExecHint = opts.showExecHint || false;
+  const sharedScope: Record<string, unknown> = {};
   let codeBuffer: string[] = [];
   const codeWidth = Math.max(10, width - 4);
 
@@ -144,11 +181,19 @@ function renderMarkdownLines(rawMarkdown: string, width: number, nc: boolean): s
         if (lcLang === 'bar-chart' || lcLang === 'barchart') isChartBlock = 'bar-chart';
         else if (lcLang === 'progress') isChartBlock = 'progress';
         else if (lcLang === 'sparkline') isChartBlock = 'sparkline';
-        if (!isPixelBlock && !isBigTextBlock && !isTypewriterBlock && !isChartBlock) {
+        isExecBlock = /\{\s*exec\s*\}/i.test(fullAnnotation);
+        isRunBlock = /\{\s*run\s*\}/i.test(fullAnnotation) || codeLang.toLowerCase() === 'run';
+        if (!isPixelBlock && !isBigTextBlock && !isTypewriterBlock && !isChartBlock && !isRunBlock) {
           const label = codeLang ? ` ${codeLang} ` : '';
+          const execLabel = isExecBlock ? ' ▶ ' : '';
+          const fullLabel = execLabel + label;
           lines.push(c(DIM, `  ┌${'─'.repeat(codeWidth)}┐`, nc));
-          if (label) {
-            lines.push(c(DIM, `  │${c(CYAN, label, nc)}${' '.repeat(Math.max(0, codeWidth - label.length))}${c(DIM, '│', nc)}`, nc));
+          if (fullLabel.trim()) {
+            const labelStr = isExecBlock
+              ? `${c(GREEN, execLabel, nc)}${c(CYAN, label, nc)}`
+              : c(CYAN, label, nc);
+            const labelLen = (isExecBlock ? execLabel.length : 0) + label.length;
+            lines.push(c(DIM, `  │${labelStr}${' '.repeat(Math.max(0, codeWidth - labelLen))}${c(DIM, '│', nc)}`, nc));
             lines.push(c(DIM, `  ├${'─'.repeat(codeWidth)}┤`, nc));
           }
         }
@@ -191,8 +236,49 @@ function renderMarkdownLines(rawMarkdown: string, width: number, nc: boolean): s
               lines.push(c(BOLD + CYAN, `  ${trimmedLine}`, nc));
             }
           }
+        } else if (isRunBlock) {
+          // {run} block: execute and show only output (no code displayed)
+          const code = codeBuffer.join('\n');
+          let output: string;
+          if (execOutputs.has(execBlockIndex)) {
+            output = execOutputs.get(execBlockIndex)!;
+          } else if (autoExec) {
+            output = executeCode(code, sharedScope);
+            execOutputs.set(execBlockIndex, output);
+          } else {
+            output = showExecHint ? '(press e to run)' : '';
+          }
+          if (output) {
+            for (const outLine of output.split('\n')) {
+              lines.push(`  ${c(GREEN, outLine, nc)}`);
+            }
+          }
+          execBlockIndex++;
         } else {
+          // Regular code block (or {exec})
           lines.push(c(DIM, `  └${'─'.repeat(codeWidth)}┘`, nc));
+
+          // {exec} block: show output below code
+          if (isExecBlock) {
+            const code = codeBuffer.join('\n');
+            let output: string | undefined;
+            if (execOutputs.has(execBlockIndex)) {
+              output = execOutputs.get(execBlockIndex);
+            } else if (autoExec) {
+              output = executeCode(code, sharedScope);
+              execOutputs.set(execBlockIndex, output);
+            } else if (showExecHint) {
+              output = '(press e to run)';
+            }
+            if (output) {
+              lines.push(c(DIM, `  ┌${'─'.repeat(codeWidth)}┐`, nc));
+              for (const outLine of output.split('\n')) {
+                lines.push(`  ${c(DIM, '│', nc)} ${c(GREEN, outLine, nc)}`);
+              }
+              lines.push(c(DIM, `  └${'─'.repeat(codeWidth)}┘`, nc));
+            }
+            execBlockIndex++;
+          }
         }
         inCodeBlock = false;
         codeLang = '';
@@ -200,15 +286,18 @@ function renderMarkdownLines(rawMarkdown: string, width: number, nc: boolean): s
         isBigTextBlock = false;
         isTypewriterBlock = false;
         isChartBlock = '';
+        isExecBlock = false;
+        isRunBlock = false;
         codeBuffer = [];
       }
       continue;
     }
 
     if (inCodeBlock) {
-      if (isPixelBlock || isBigTextBlock || isTypewriterBlock || isChartBlock) {
+      if (isPixelBlock || isBigTextBlock || isTypewriterBlock || isChartBlock || isRunBlock) {
         codeBuffer.push(line);
       } else {
+        if (isExecBlock) codeBuffer.push(line); // buffer for execution
         lines.push(`  ${c(DIM, '│', nc)} ${c(GREEN, line, nc)}`);
       }
       continue;

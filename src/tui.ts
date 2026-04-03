@@ -29,6 +29,7 @@ export async function tui(filePath: string) {
   let currentStep = 0;
   let animating = false;
   let typewriterTimer: ReturnType<typeof setTimeout> | null = null;
+  const execOutputsPerSlide = new Map<number, Map<number, string>>(); // slide → (block → output)
 
   const getTermSize = () => ({
     cols: process.stdout.columns || 80,
@@ -77,7 +78,7 @@ export async function tui(filePath: string) {
 
     // Footer
     output += `${DIM}${'─'.repeat(cols)}${RESET}\n`;
-    output += ` ${DIM}←/→ navigate  q quit  g first  G last  ? help${RESET}`;
+    output += ` ${DIM}←/→ navigate  e execute  q quit  ? help${RESET}`;
 
     return output;
   }
@@ -105,8 +106,32 @@ export async function tui(filePath: string) {
         .replace(/```typewriter\s*\n[\s\S]*?```/i, '');
     }
 
-    const renderedLines = renderSlideToText(md, { width });
+    const slideExecOutputs = execOutputsPerSlide.get(currentSlide);
+    const renderedLines = renderSlideToText(md, {
+      width,
+      execOutputs: slideExecOutputs,
+      showExecHint: true,
+    });
     process.stdout.write(buildFrame(renderedLines));
+  }
+
+  /**
+   * Execute all {exec} and {run} blocks on the current slide.
+   */
+  function executeCurrentSlide() {
+    const { cols } = getTermSize();
+    const width = Math.min(cols, 120);
+    const md = getCurrentMarkdown();
+
+    // Auto-execute and capture outputs
+    const outputs = new Map<number, string>();
+    renderSlideToText(md, { width, autoExec: true, execOutputs: outputs });
+
+    // Store outputs for this slide
+    execOutputsPerSlide.set(currentSlide, outputs);
+
+    // Re-render with outputs
+    render();
   }
 
   /**
@@ -280,6 +305,7 @@ export async function tui(filePath: string) {
       `  ${BOLD}←${RESET}  /  ${BOLD}h${RESET}  /  ${BOLD}k${RESET}  /  ${BOLD}Backspace${RESET}  Previous slide/step`,
       `  ${BOLD}g${RESET}  /  ${BOLD}Home${RESET}                  First slide`,
       `  ${BOLD}G${RESET}  /  ${BOLD}End${RESET}                   Last slide`,
+      `  ${BOLD}e${RESET}                          Execute code blocks`,
       `  ${BOLD}q${RESET}  /  ${BOLD}Ctrl+C${RESET}               Quit`,
       `  ${BOLD}?${RESET}                          Toggle this help`,
       '',
@@ -368,6 +394,9 @@ export async function tui(filePath: string) {
       case 'G':
       case '\x1b[F':
         last();
+        break;
+      case 'e':
+        executeCurrentSlide();
         break;
       case '?':
         stopTypewriter();
